@@ -317,84 +317,15 @@ void loop() {
     }
 
     if(start) {
-        if(!uncovered) {
-            coverMatrix();
-            uncoverMatrix();
-            uncovered = 1;
-            Serial.println("Game started");
-            inGameLCD();
-        }
-
-        if(millis() - lastUpdateTime > second) {
-            lastUpdateTime = millis();
-            lcd.setCursor(1, 1);
-            lcd.print("   ");
-            lcd.setCursor(1, 1);
-            lcd.print((roundTime - (millis() - startTime)) / second);
-            Serial.print("Time left: ");
-            Serial.println((roundTime - (millis() - startTime)) / second);
-
-            if((roundTime - (millis() - startTime)) / second == 0) {
-                standby = true;
-                coverMatrix();
-                displayAnimation(trophyMatrix);
-                resetBoard();
-                Serial.print("Congrats, you finished in ");
-                Serial.print((millis() - startTime) / second);
-                Serial.println(" seconds");
-                animateLCD(3);
-                Serial.println("Time's up!");
-                lcd.clear();
-                lcd.setCursor(0, 0);
-                lcd.print("Time's up!");
-                lcd.setCursor(0, 1);
-                lcd.print("You got: ");
-                lcd.print(initialNoWalls - noWalls);
-                lcd.print(" points");
-            }
-        }
-        
-        if(noWalls == 0 && !finished) {
-            standby = true;
-            coverMatrix();
-            displayAnimation(trophyMatrix);
-            resetBoard();
-            Serial.print("Congrats, you finished in ");
-            Serial.print((millis() - startTime) / second);
-            Serial.println(" seconds");
-        }
-
-        blinkLEDs();
-        readJoystick();
-        actOnJoystick();
-        actOnSW();
-        bulletsTravel();
+        playGame();
     }
 
     if(playDestroySound) {
-        tone(buzzerPin, wallHitSoundFrequencies[currentFrequency], wallHitSoundDurations[currentFrequency]);
-        if(millis() - lastHitSound > wallHitSoundDurations[currentFrequency]) {
-            lastHitSound = millis();
-            noTone(buzzerPin);
-            currentFrequency++;
-            if(currentFrequency == soundFrequencies) {
-                currentFrequency = 0;
-                playDestroySound = false;
-            }
-        }
+        destroySound();
     }
 
     if(playShootSound) {
-        tone(buzzerPin, bulletSoundFrequencies[currentFrequency], bulletSoundDurations[currentFrequency]);
-        if(millis() - lastBulletSound > bulletSoundDurations[currentFrequency]) {
-            lastBulletSound = millis();
-            noTone(buzzerPin);
-            currentFrequency++;
-            if(currentFrequency == soundFrequencies) {
-                currentFrequency = 0;
-                playShootSound = false;
-            }
-        }
+        shootSound();
     }
     if (!start && inMenu) {
         readJoystick();
@@ -402,6 +333,89 @@ void loop() {
         selectInMenu();
     }
 }
+
+void playGame() {
+    if(!uncovered) {
+        coverMatrix();
+        uncoverMatrix();
+        uncovered = 1;
+        Serial.println("Game started");
+        inGameLCD();
+    }
+
+    if(millis() - lastUpdateTime > second) {
+        lastUpdateTime = millis();
+        lcd.setCursor(1, 1);
+        lcd.print("   ");
+        lcd.setCursor(1, 1);
+        lcd.print((roundTime - (millis() - startTime)) / second);
+        Serial.print("Time left: ");
+        Serial.println((roundTime - (millis() - startTime)) / second);
+
+        if((roundTime - (millis() - startTime)) / second == 0) {
+            standby = true;
+            coverMatrix();
+            displayAnimation(trophyMatrix);
+            resetBoard();
+            Serial.print("Congrats, you finished in ");
+            Serial.print((millis() - startTime) / second);
+            Serial.println(" seconds");
+            animateLCD(3);
+            Serial.println("Time's up!");
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print("Time's up!");
+            lcd.setCursor(0, 1);
+            lcd.print("You got: ");
+            lcd.print(initialNoWalls - noWalls);
+            lcd.print(" points");
+        }
+    }
+    
+    if(noWalls == 0 && !finished) {
+        standby = true;
+        coverMatrix();
+        displayAnimation(trophyMatrix);
+        resetBoard();
+        Serial.print("Congrats, you finished in ");
+        Serial.print((millis() - startTime) / second);
+        Serial.println(" seconds");
+    }
+
+    blinkLEDs();
+    readJoystick();
+    actOnJoystick();
+    actOnSW();
+    bulletsTravel();
+}
+
+
+void destroySound() {
+    tone(buzzerPin, wallHitSoundFrequencies[currentFrequency], wallHitSoundDurations[currentFrequency]);
+    if(millis() - lastHitSound > wallHitSoundDurations[currentFrequency]) {
+        lastHitSound = millis();
+        noTone(buzzerPin);
+        currentFrequency++;
+        if(currentFrequency == soundFrequencies) {
+            currentFrequency = 0;
+            playDestroySound = false;
+        }
+    }
+}
+
+void shootSound() {
+    tone(buzzerPin, bulletSoundFrequencies[currentFrequency], bulletSoundDurations[currentFrequency]);
+    if(millis() - lastBulletSound > bulletSoundDurations[currentFrequency]) {
+        lastBulletSound = millis();
+        noTone(buzzerPin);
+        currentFrequency++;
+        if(currentFrequency == soundFrequencies) {
+            currentFrequency = 0;
+            playShootSound = false;
+        }
+    }
+}
+
 
 void blinkLEDs() {
     if(millis() - lastPlayerBlink > playerBlinkingTime) {
