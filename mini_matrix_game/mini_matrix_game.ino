@@ -366,7 +366,6 @@ void playGame() {
             standby = true;
             coverMatrix();
             displayAnimation(trophyMatrix);
-            resetBoard();
             Serial.print(F("Congrats, you finished in "));
             Serial.print((millis() - startTime) / second);
             Serial.println(" seconds");
@@ -376,9 +375,10 @@ void playGame() {
             lcd.setCursor(0, 0);
             lcd.print("Time's up!");
             lcd.setCursor(0, 1);
-            lcd.print("You got: ");
+            lcd.print("Score: ");
             lcd.print(initialNoWalls - noWalls);
-            lcd.print(" points");
+
+            resetBoard();
         }
     }
     
