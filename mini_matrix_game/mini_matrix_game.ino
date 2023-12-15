@@ -79,28 +79,28 @@ direction left = {-1, 0};
 direction right = {1, 0};
 direction currentDirection = {0, 0};
 
-// byte matrix[matrixSize][matrixSize] = {
-//   {1, 1, 1, 0, 0, 1, 1, 1},
-//   {1, 0, 0, 0, 0, 0, 0, 1},
-//   {1, 0, 0, 0, 0, 0, 0, 1},
-//   {0, 0, 0, 0, 0, 0, 0, 0},
-//   {0, 0, 0, 0, 0, 0, 0, 0},
-//   {1, 0, 0, 0, 0, 0, 0, 1},
-//   {1, 0, 0, 0, 0, 0, 0, 1},
-//   {1, 1, 1, 0, 0, 1, 1, 1}  
-// };
+byte matrix[matrixSize][matrixSize] = {
+  {1, 1, 1, 0, 0, 1, 1, 1},
+  {1, 0, 0, 0, 0, 0, 0, 1},
+  {1, 0, 0, 0, 0, 0, 0, 1},
+  {0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 0, 0, 0, 0, 0, 0},
+  {1, 0, 0, 0, 0, 0, 0, 1},
+  {1, 0, 0, 0, 0, 0, 0, 1},
+  {1, 1, 1, 0, 0, 1, 1, 1}  
+};
 /// here, i could make these walls that i want to be permanent have another value, so that i can not destroy them!
 
-byte matrix[matrixSize][matrixSize] = {
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0}  
-};
+// byte matrix[matrixSize][matrixSize] = {
+//   {0, 0, 0, 0, 0, 0, 0, 0},
+//   {0, 0, 0, 0, 0, 0, 0, 0},
+//   {0, 0, 0, 0, 0, 0, 0, 0},
+//   {0, 0, 0, 0, 0, 0, 0, 0},
+//   {0, 0, 0, 0, 0, 0, 0, 0},
+//   {0, 0, 0, 0, 0, 0, 0, 0},
+//   {0, 0, 0, 0, 0, 0, 0, 0},
+//   {0, 0, 0, 0, 0, 0, 0, 0}  
+// };
 
 void updateMatrix();
 void printMenu(int subMenu = 0);
@@ -611,11 +611,17 @@ void randomStartPos() {
 }
 
 void generateWalls() {
+    // before room walls:
     // 8x8 matrix => 64 cells
     // 50% - 75% walls => 32 - 48 walls
+
+    // room walls take up 20 cells out of the 64
+    // free cells = 64 - 20 = 44
+    // 50% - 75% walls => 22 - 33 walls
     randomSeed(analogRead(A2));
 
-    noWalls = random() % 17 + 32;
+    // noWalls = random() % 17 + 32;
+    noWalls = random() % 11 + 22;
     initialNoWalls = noWalls;
     for(int i = 0; i < noWalls; i++) {
         int x = random() % matrixSize;
