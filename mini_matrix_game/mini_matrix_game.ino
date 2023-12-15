@@ -49,6 +49,7 @@ bool bulletState = 0, playerState = 0;
 bool matrixChanged = true;
 
 bool menuDisplayed = false, waitingForInput = false, finished = false, playDestroySound = false, playShootSound = false, automaticBrightness = false;
+bool selectedName = false, selectName = false;
 const int lcdBrightnessAddress = 3, matrixBrightnessAddress = 3 + sizeof(byte) + 1;
 bool inMenu = true, standby = false;
 int selected = 0, option = 0;
@@ -56,12 +57,12 @@ bool start = 0, uncovered = 0;
 int noWalls = 0, initialNoWalls = 0;
 unsigned long startTime = 0;
 
-const int menu = 0, play = 1, easy = 10, medium = 11, hard = 12, settings = 2, setLCDBrightness = 20, lcdLow = 200, lcdMed = 201, lcdHigh = 202, setMatrixBrightness = 21, matrixLow = 210, matrixMed = 211, matrixHigh = 212, matrixAuto = 213, about = 3, expandedAboutGameName = 30, expandedAboutCreatorName = 31, expandedAboutGitHub = 32, expandedAboutLinkedin = 33;
+const int menu = 0, play = 1, easy = 10, medium = 11, hard = 12, settings = 2, setLCDBrightness = 20, lcdLow = 200, lcdMed = 201, lcdHigh = 202, setMatrixBrightness = 21, matrixLow = 210, matrixMed = 211, matrixHigh = 212, matrixAuto = 213, about = 3, expandedAboutGameName = 30, expandedAboutCreatorName = 31, expandedAboutGitHub = 32, expandedAboutLinkedin = 33, nameSelect = 4;
 const int select = 10;
 const int easyTime = 90 * second, mediumTime = 60 * second, hardTime = 30 * second;
 int roundTime = 90000;
 unsigned long lastUpdateTime = 0;
-int menuNo = 3, aboutNo = 3, settingsNo = 1, lcdNo = 2, matrixNo = 3;
+int menuNo = 4, aboutNo = 3, settingsNo = 1, lcdNo = 2, matrixNo = 3;
 
 const int soundFrequencies = 3;
 int currentFrequency = 0;
@@ -78,6 +79,11 @@ direction down = {0, 1};
 direction left = {-1, 0};
 direction right = {1, 0};
 direction currentDirection = {0, 0};
+
+const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
+const int alphabetLength = sizeof(alphabet) - 1, inputDebounceTime = 500;
+int playerName[3] = {0, 0, 0};
+int playerNameSelectIndex = 0, playerNameLength = 3;
 
 byte matrix[matrixSize][matrixSize] = {
   {1, 1, 1, 0, 0, 1, 1, 1},
@@ -320,6 +326,10 @@ void loop() {
         playGame();
     }
 
+    if(selectName == true) {
+        inputName();
+    }
+
     if(playDestroySound) {
         destroySound();
     }
@@ -349,7 +359,7 @@ void playGame() {
         lcd.print("   ");
         lcd.setCursor(1, 1);
         lcd.print((roundTime - (millis() - startTime)) / second);
-        Serial.print("Time left: ");
+        Serial.print(F("Time left: "));
         Serial.println((roundTime - (millis() - startTime)) / second);
 
         if((roundTime - (millis() - startTime)) / second == 0) {
@@ -357,7 +367,7 @@ void playGame() {
             coverMatrix();
             displayAnimation(trophyMatrix);
             resetBoard();
-            Serial.print("Congrats, you finished in ");
+            Serial.print(F("Congrats, you finished in "));
             Serial.print((millis() - startTime) / second);
             Serial.println(" seconds");
             animateLCD(3);
@@ -377,7 +387,7 @@ void playGame() {
         coverMatrix();
         displayAnimation(trophyMatrix);
         resetBoard();
-        Serial.print("Congrats, you finished in ");
+        Serial.print(F("Congrats, you finished in "));
         Serial.print((millis() - startTime) / second);
         Serial.println(" seconds");
     }
@@ -389,6 +399,65 @@ void playGame() {
     bulletsTravel();
 }
 
+void inputName() {
+    lcd.setCursor(1, 1);
+    lcd.print(alphabet[playerName[0]]);
+    lcd.print(alphabet[playerName[1] + 1]);
+    lcd.print(alphabet[playerName[2] + 2]);
+
+    readJoystick();
+    if(xValue < lowerThresholdX && millis() - lastChangeX > inputDebounceTime) {
+        lastChangeX = millis();
+        if(playerName[playerNameSelectIndex] == 0) {
+            playerName[playerNameSelectIndex] = alphabetLength - 1;
+        }
+        else {
+            playerName[playerNameSelectIndex]--;
+        }
+        Serial.print(F("values: "));
+        Serial.print(playerName[0]);
+        Serial.print(playerName[1]);
+        Serial.println(playerName[2]);
+    }
+    else if(xValue > upperThresholdX && millis() - lastChangeX > inputDebounceTime) {        
+        lastChangeX = millis();
+        if(playerName[playerNameSelectIndex] == alphabetLength - 1) {
+            playerName[playerNameSelectIndex] = 0;
+        }
+        else {
+            playerName[playerNameSelectIndex]++;
+        }
+        Serial.print(F("values: "));
+        Serial.print(playerName[0]);
+        Serial.print(playerName[1]);
+        Serial.println(playerName[2]);
+    }
+    if(yValue < lowerThresholdY && millis() - lastChangeY > inputDebounceTime) {
+        lastChangeY = millis();
+        playerNameSelectIndex--;
+        if(playerNameSelectIndex < 0) {
+            playerNameSelectIndex = 2;
+        }
+    }
+    else if(yValue > upperThresholdY && millis() - lastChangeY > inputDebounceTime) {
+        lastChangeY = millis();
+        playerNameSelectIndex++;
+        if(playerNameSelectIndex > 2) {
+            playerNameSelectIndex = 0;
+        }
+    }
+
+    if(digitalRead(pinSW) == 1 && millis() - lastChangeSW > debounceTime) {
+        lastChangeSW = millis();
+        selectedName = true;
+        selectName = false;
+        inMenu = true;
+        Serial.print(F("Selected name: "));
+        Serial.print(alphabet[playerName[0]]);
+        Serial.print(alphabet[playerName[1]]);
+        Serial.println(alphabet[playerName[2]]);
+    }
+}
 
 void destroySound() {
     tone(buzzerPin, wallHitSoundFrequencies[currentFrequency], wallHitSoundDurations[currentFrequency]);
@@ -490,7 +559,7 @@ void navigateMenu() {
         menuNo = option == 200 ? lcdNo : matrixNo;
     }
     else {
-        menuNo = 3;
+        menuNo = 4;
     }
     if(xValue < lowerThresholdX && millis() - lastChangeX > debounceTime) {
         lastChangeX = millis();
@@ -498,7 +567,7 @@ void navigateMenu() {
         if(selected > menuNo) {
             selected = 0;
         }
-        Serial.print("Navigating to: ");
+        Serial.print(F("Navigating to: "));
         Serial.println(option + selected);
         printMenu(option + selected);
     }
@@ -508,7 +577,7 @@ void navigateMenu() {
         if(selected < 0) {
             selected = menuNo;
         }
-        Serial.print("Navigating to: ");
+        Serial.print(F("Navigating to: "));
         Serial.println(option + selected);
         printMenu(option + selected);
     }
@@ -537,13 +606,13 @@ void actOnSW() {
 
 void selectInMenu(bool fromJoystick = false) {
     if((digitalRead(pinSW) == 1 || fromJoystick) && millis() - lastChangeSW > debounceTime) {
-        Serial.print("Selecting in menu: selected = ");
+        Serial.print(F("Selecting in menu: selected = "));
         Serial.print(selected);
-        Serial.print(", option = ");
+        Serial.print(F(", option = "));
         Serial.println(option);
         lcd.createChar(4, downwardArrow);
         lastChangeSW = millis();
-        if(option == 0 && selected == 0) {
+        if(option == 0 && selected == 0 || option / 10 == 3) {
             return;
         }
         // if(option != 0) {
@@ -914,10 +983,28 @@ void printMenu(int subMenu = 0) {
             lcd.print(" ioananghel  ");
             lcd.write(byte(7));
             break;
+        case nameSelect:
+            lcd.setCursor(0, 0);
+            lcd.print("> Select Name ");
+            lcd.write(byte(5));
+            lcd.write(byte(7));
+            Serial.println("Name");
+            break;
+        case nameSelect * select:
+            lcd.setCursor(0, 0);
+            lcd.write(byte(4));
+            lcd.print(" Select Name");
+            lcd.setCursor(13, 1);
+            lcd.print("<");
+            lcd.write(byte(7));
+            lcd.print(">");
+            selectName = true;
+            inMenu = false;
+            break;
         default:
-            Serial.print("Invalid options: ");
+            Serial.print(F("Invalid options: "));
             Serial.println(subMenu);
-            Serial.print("\n");
+            Serial.print(F("\n"));
             break;
     }
 }
