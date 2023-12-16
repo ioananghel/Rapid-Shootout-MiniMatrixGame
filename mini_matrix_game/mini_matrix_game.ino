@@ -520,7 +520,7 @@ void blinkLEDs() {
     if(millis() - lastPlayerBlink > playerBlinkingTime) {
         lastPlayerBlink = millis();
         playerState = !playerState;
-        lc.setLed(0, xLastPos, yLastPos, playerState);
+        lc.setLed(0, currentPlayerPosition.x, currentPlayerPosition.y, playerState);
     }
     if(millis() - lastBulletBlink > bulletBlinkingTime) {
         lastBulletBlink = millis();
@@ -628,7 +628,7 @@ void actOnSW() {
     if(digitalRead(pinSW) == 1 && millis() - lastChangeSW > shootDebounceTime) {
         lastChangeSW = millis();
 
-        Bullet* bullet = new Bullet(xLastPos, yLastPos, currentDirection);
+        Bullet* bullet = new Bullet(currentPlayerPosition.x, currentPlayerPosition.y, currentDirection);
         BulletNode* node = new BulletNode(bullet);
         bullets.addNode(node);
     }
@@ -680,8 +680,8 @@ void bulletsTravel() {
 }
 
 void move(direction dir) {
-    xPos = xLastPos + dir.x;
-    yPos = yLastPos + dir.y;
+    xPos = currentPlayerPosition.x + dir.x;
+    yPos = currentPlayerPosition.y + dir.y;
     if(xPos < 0) {
         xPos = matrixSize - 1;
     }
@@ -699,14 +699,14 @@ void move(direction dir) {
         return;
     }
 
-    currentPlayerPosition.x = xPos;
-    currentPlayerPosition.y = yPos;
+    // currentPlayerPosition.x = xPos;
+    // currentPlayerPosition.y = yPos;
 
     matrix[xPos][yPos] = 1;
-    matrix[xLastPos][yLastPos] = 0;
+    matrix[currentPlayerPosition.x][currentPlayerPosition.y] = 0;
     updateMatrix();
-    xLastPos = xPos;
-    yLastPos = yPos;
+    currentPlayerPosition.x = xPos;
+    currentPlayerPosition.y = yPos;
 }
 
 void updateMatrix() {
@@ -730,8 +730,8 @@ void randomStartPos() {
         matrix[xPos][yPos] = 1;
     }
 
-    xLastPos = xPos;
-    yLastPos = yPos;
+    currentPlayerPosition.x = xPos;
+    currentPlayerPosition.y = yPos;
 }
 
 void generateWalls() {
@@ -794,6 +794,7 @@ void printMenu(int subMenu = 0) {
             start = 1;
             finished = 0;
             lost = 0;
+            lives = easyLives;
             startTime = millis();
             inMenu = false;
             break;
@@ -811,6 +812,7 @@ void printMenu(int subMenu = 0) {
             start = 1;
             finished = 0;
             lost = 0;
+            lives = mediumLives;
             startTime = millis();
             inMenu = false;
             break;
@@ -828,6 +830,7 @@ void printMenu(int subMenu = 0) {
             start = 1;
             finished = 0;
             lost = 0;
+            lives = hardLives;
             startTime = millis();
             inMenu = false;
             break;
