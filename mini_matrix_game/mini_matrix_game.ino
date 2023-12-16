@@ -26,10 +26,10 @@ byte lcdBrightness = 5;
 unsigned long lastChangeX = 0, lastChangeY = 0, lastChangeSW;
 LedControl lc = LedControl(dinPin, clockPin, loadPin, 1);
 byte matrixBrightness = 7.5;
-byte xPos = 0;
-byte yPos = 0;
-byte xLastPos = 0;
-byte yLastPos = 0;
+int xPos = 0;
+int yPos = 0;
+int xLastPos = 0;
+int yLastPos = 0;
 int xValue, yValue;
 
 const int lowerThresholdX = 400, lowerThresholdY = 400;
@@ -44,11 +44,12 @@ const int bulletBlinkingTime = 100, bulletSpeed = 200, playerBlinkingTime = 400;
 unsigned long lastBulletMove = 0;
 unsigned long lastBulletBlink = 0, lastPlayerBlink = 0, lastBulletSound = 0, lastHitSound = 0;
 bool bulletState = 0, playerState = 0;
+const int maxBulletTravel = 15;
 
 // const byte matrixSize = 8;
 bool matrixChanged = true;
 
-bool menuDisplayed = false, waitingForInput = false, finished = false, playDestroySound = false, playShootSound = false, automaticBrightness = false;
+bool menuDisplayed = false, waitingForInput = false, finished = false, lost = false, playDestroySound = false, playShootSound = false, automaticBrightness = false;
 bool selectedName = false, selectName = false;
 const int lcdBrightnessAddress = 3, matrixBrightnessAddress = 3 + sizeof(byte) + 1;
 bool inMenu = true, standby = false;
@@ -60,6 +61,8 @@ unsigned long startTime = 0;
 const int menu = 0, play = 1, easy = 10, medium = 11, hard = 12, settings = 2, setLCDBrightness = 20, lcdLow = 200, lcdMed = 201, lcdHigh = 202, setMatrixBrightness = 21, matrixLow = 210, matrixMed = 211, matrixHigh = 212, matrixAuto = 213, about = 3, expandedAboutGameName = 30, expandedAboutCreatorName = 31, expandedAboutGitHub = 32, expandedAboutLinkedin = 33, nameSelect = 4;
 const int select = 10;
 const int easyTime = 90 * second, mediumTime = 60 * second, hardTime = 30 * second;
+const int easyLives = 5, mediumLives = 4, hardLives = 3;
+int lives = 3;
 int roundTime = 90000;
 unsigned long lastUpdateTime = 0;
 int menuNo = 4, aboutNo = 3, settingsNo = 1, lcdNo = 2, matrixNo = 3;
@@ -79,6 +82,7 @@ direction down = {0, 1};
 direction left = {-1, 0};
 direction right = {1, 0};
 direction currentDirection = {0, 0};
+direction currentPlayerPosition =  {0, 0};
 
 const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
 const int alphabetLength = sizeof(alphabet) - 1, inputDebounceTime = 500;
@@ -86,27 +90,15 @@ int playerName[3] = {0, 0, 0};
 int playerNameSelectIndex = 0, playerNameLength = 3;
 
 byte matrix[matrixSize][matrixSize] = {
-  {1, 1, 1, 0, 0, 1, 1, 1},
-  {1, 0, 0, 0, 0, 0, 0, 1},
-  {1, 0, 0, 0, 0, 0, 0, 1},
+  {2, 2, 2, 0, 0, 2, 2, 2},
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {2, 0, 0, 0, 0, 0, 0, 2},
   {0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0},
-  {1, 0, 0, 0, 0, 0, 0, 1},
-  {1, 0, 0, 0, 0, 0, 0, 1},
-  {1, 1, 1, 0, 0, 1, 1, 1}  
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {2, 2, 2, 0, 0, 2, 2, 2}  
 };
-/// here, i could make these walls that i want to be permanent have another value, so that i can not destroy them!
-
-// byte matrix[matrixSize][matrixSize] = {
-//   {0, 0, 0, 0, 0, 0, 0, 0},
-//   {0, 0, 0, 0, 0, 0, 0, 0},
-//   {0, 0, 0, 0, 0, 0, 0, 0},
-//   {0, 0, 0, 0, 0, 0, 0, 0},
-//   {0, 0, 0, 0, 0, 0, 0, 0},
-//   {0, 0, 0, 0, 0, 0, 0, 0},
-//   {0, 0, 0, 0, 0, 0, 0, 0},
-//   {0, 0, 0, 0, 0, 0, 0, 0}  
-// };
 
 void updateMatrix();
 void printMenu(int subMenu = 0);
@@ -116,12 +108,14 @@ class Bullet {
     int xPos, yPos;
     int xLastPos, yLastPos;
     direction dir;
+    int currentTravel;
 
     public:
-        Bullet(int xPos, int yPos, direction dir) {
+        Bullet(int xPos, int yPos, direction dir, int currentTravel = 0) {
             this->xPos = xPos;
             this->yPos = yPos;
             this->dir = dir;
+            this->currentTravel = currentTravel;
 
             // Serial.println("Bullet created");
             playShootSound = true;
@@ -152,35 +146,59 @@ class Bullet {
             xPos = (xPos + dir.x);
             yPos = (yPos + dir.y);
             if(xPos >= matrixSize) {
-                matrix[xPos][yPos] = 0;
+                // matrix[xPos][yPos] = 0;
+                xPos = 0;
                 updateMatrix();
-                return 0;
+                // return 0;
             }
             if(yPos >= matrixSize) {
-                matrix[xPos][yPos] = 0;
+                // matrix[xPos][yPos] = 0;
+                yPos = 0;
                 updateMatrix();
-                return 0;
+                // return 0;
             }
             if(xPos < 0) {
-                matrix[xPos][yPos] = 0;
+                // matrix[xPos][yPos] = 0;
+                xPos = matrixSize - 1;
                 updateMatrix();
-                return 0;
+                // return 0;
             }
             if(yPos < 0) {
-                matrix[xPos][yPos] = 0;
+                // matrix[xPos][yPos] = 0;
+                yPos = matrixSize - 1;
                 updateMatrix();
-                return 0;
+                // return 0;
             }
 
             if(matrix[xPos][yPos] == 1) {
                 playDestroySound = true;
-                noWalls--;
+                if(xPos == currentPlayerPosition.x && yPos == currentPlayerPosition.y) {
+                    lcd.setCursor(lives - 1, 0);
+                    lcd.write(byte(6));
+                    lives--;
+                }
+                else {
+                    noWalls--;
+                }
                 // Serial.println(noWalls);
                 matrix[xPos][yPos] = 0;
                 matrix[xLastPos][yLastPos] = 0;
                 updateMatrix();
                 return 0;
             }
+            if(matrix[xPos][yPos] == 2) {
+                playDestroySound = true;
+                matrix[xLastPos][yLastPos] = 0;
+                updateMatrix();
+                return 0;
+            }
+            if(currentTravel == maxBulletTravel) {
+                matrix[xLastPos][yLastPos] = 0;
+                updateMatrix();
+                return 0;
+            }
+
+            currentTravel++;
 
             updateMatrix();
             return 1;
@@ -311,6 +329,18 @@ void loop() {
             menuDisplayed = false;
         }
     }
+    if(lives == 0 && !finished) {
+        standby = true;
+        coverMatrix();
+        Serial.println("You lost!");
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("You lost!");
+        lcd.setCursor(0, 1);
+        lcd.print("Score: ");
+        lcd.print(initialNoWalls - noWalls);
+        resetBoard();
+    }
 
     if(!menuDisplayed && !start) {
         selected = 0;
@@ -359,8 +389,8 @@ void playGame() {
         lcd.print("   ");
         lcd.setCursor(1, 1);
         lcd.print((roundTime - (millis() - startTime)) / second);
-        Serial.print(F("Time left: "));
-        Serial.println((roundTime - (millis() - startTime)) / second);
+        // Serial.print(F("Time left: "));
+        // Serial.println((roundTime - (millis() - startTime)) / second);
 
         if((roundTime - (millis() - startTime)) / second == 0) {
             standby = true;
@@ -615,11 +645,6 @@ void selectInMenu(bool fromJoystick = false) {
         if(option == 0 && selected == 0 || option / 10 == 3) {
             return;
         }
-        // if(option != 0) {
-        //     selected = option / 10;
-        //     option = 0;
-        //     printMenu(option + selected);
-        // }
         else if(option == 0 || option / 10 < 10 || option == 200 || option == 210) {
             option = ((option / 10) * 10 + selected) * 10;
             selected = 0;
@@ -655,18 +680,27 @@ void bulletsTravel() {
 }
 
 void move(direction dir) {
-    xPos = (xLastPos + dir.x) % matrixSize;
-    yPos = (yLastPos + dir.y) % matrixSize;
+    xPos = xLastPos + dir.x;
+    yPos = yLastPos + dir.y;
     if(xPos < 0) {
         xPos = matrixSize - 1;
     }
     if(yPos < 0) {
         yPos = matrixSize - 1;
     }
+    if(xPos > matrixSize - 1) {
+        xPos = 0;
+    }
+    if(yPos > matrixSize - 1) {
+        yPos = 0;
+    }
 
-    if(matrix[xPos][yPos] == 1) {
+    if(matrix[xPos][yPos]) {
         return;
     }
+
+    currentPlayerPosition.x = xPos;
+    currentPlayerPosition.y = yPos;
 
     matrix[xPos][yPos] = 1;
     matrix[xLastPos][yLastPos] = 0;
@@ -689,6 +723,13 @@ void randomStartPos() {
     xPos = random() % matrixSize;
     yPos = random() % matrixSize;
 
+    if(matrix[xPos][yPos]) {
+        randomStartPos();
+    }
+    else {
+        matrix[xPos][yPos] = 1;
+    }
+
     xLastPos = xPos;
     yLastPos = yPos;
 }
@@ -705,12 +746,13 @@ void generateWalls() {
 
     // noWalls = random() % 17 + 32;
     noWalls = random() % 11 + 22;
+    // noWalls = 0;
     initialNoWalls = noWalls;
     for(int i = 0; i < noWalls; i++) {
         int x = random() % matrixSize;
         int y = random() % matrixSize;
 
-        if(matrix[x][y] == 1) {
+        if(matrix[x][y]) {
             i--;
         }
         matrix[x][y] = 1;
@@ -748,6 +790,8 @@ void printMenu(int subMenu = 0) {
         case easy * select:
             roundTime = easyTime;
             start = 1;
+            finished = 0;
+            lost = 0;
             startTime = millis();
             inMenu = false;
             break;
@@ -763,6 +807,8 @@ void printMenu(int subMenu = 0) {
         case medium * select:
             roundTime = mediumTime;
             start = 1;
+            finished = 0;
+            lost = 0;
             startTime = millis();
             inMenu = false;
             break;
@@ -778,14 +824,11 @@ void printMenu(int subMenu = 0) {
         case hard * select:
             roundTime = hardTime;
             start = 1;
+            finished = 0;
+            lost = 0;
             startTime = millis();
             inMenu = false;
             break;
-        // case 10:
-        //     start = 1;
-        //     startTime = millis();
-        //     inMenu = false;
-        //     break;
         case settings:
             lcd.setCursor(0, 0);
             lcd.print("> Settings ");
