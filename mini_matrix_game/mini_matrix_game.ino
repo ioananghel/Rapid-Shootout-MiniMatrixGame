@@ -755,7 +755,9 @@ void generateWalls() {
         if(matrix[x][y]) {
             i--;
         }
-        matrix[x][y] = 1;
+        else{
+            matrix[x][y] = 1;
+        }
     }
 }
 
