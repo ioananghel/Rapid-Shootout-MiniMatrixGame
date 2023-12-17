@@ -2,6 +2,8 @@
 #include <LiquidCrystal.h>
 #include <EEPROM.h>
 #include "custom_chars.h"
+#include "player.h"
+#include "memory.h"
 const int dinPin = 12;
 const int clockPin = 11;
 const int loadPin = 10;
@@ -49,23 +51,26 @@ const int maxBulletTravel = 15;
 // const byte matrixSize = 8;
 bool matrixChanged = true;
 
-bool menuDisplayed = false, waitingForInput = false, finished = false, lost = false, playDestroySound = false, playShootSound = false, automaticBrightness = false;
+bool menuDisplayed = false, waitingForInput = false, finished = false, lost = false, playDestroySound = false, playShootSound = false;
+int automaticBrightness = false;
 bool selectedName = false, selectName = false;
-const int lcdBrightnessAddress = 3, matrixBrightnessAddress = 3 + sizeof(byte) + 1;
 bool inMenu = true, standby = false;
 int selected = 0, option = 0;
+int soundOn = true;
 bool start = 0, uncovered = 0;
 int noWalls = 0, initialNoWalls = 0;
 unsigned long startTime = 0;
 
-const int menu = 0, play = 1, easy = 10, medium = 11, hard = 12, settings = 2, setLCDBrightness = 20, lcdLow = 200, lcdMed = 201, lcdHigh = 202, setMatrixBrightness = 21, matrixLow = 210, matrixMed = 211, matrixHigh = 212, matrixAuto = 213, about = 3, expandedAboutGameName = 30, expandedAboutCreatorName = 31, expandedAboutGitHub = 32, expandedAboutLinkedin = 33, nameSelect = 4;
+const int menu = 0, play = 1, easy = 10, medium = 11, hard = 12, settings = 2, setLCDBrightness = 20, lcdLow = 200, lcdMed = 201, lcdHigh = 202, setMatrixBrightness = 21, matrixLow = 210, matrixMed = 211, matrixHigh = 212, matrixAuto = 213, soundSettings = 22, about = 3, expandedAboutGameName = 30, expandedAboutCreatorName = 31, expandedAboutGitHub = 32, expandedAboutLinkedin = 33, nameSelect = 4;
 const int select = 10;
-const int easyTime = 90 * second, mediumTime = 60 * second, hardTime = 30 * second;
+const unsigned long easyTime = 90 * second, mediumTime = 60 * second, hardTime = 30 * second;
+const int mediumScoreMultiplier = 2, hardScoreMultiplier = 3;
+int scoreMultiplier = 1;
 const int easyLives = 5, mediumLives = 4, hardLives = 3;
 int lives = 3;
-int roundTime = 90000;
+unsigned long roundTime = easyTime;
 unsigned long lastUpdateTime = 0;
-int menuNo = 4, aboutNo = 3, settingsNo = 1, lcdNo = 2, matrixNo = 3;
+int menuNo = 4, aboutNo = 3, settingsNo = 2, lcdNo = 2, matrixNo = 3;
 
 const int soundFrequencies = 3;
 int currentFrequency = 0;
@@ -84,10 +89,8 @@ direction right = {1, 0};
 direction currentDirection = {0, 0};
 direction currentPlayerPosition =  {0, 0};
 
-const char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
-const int alphabetLength = sizeof(alphabet) - 1, inputDebounceTime = 500;
-int playerName[3] = {0, 0, 0};
-int playerNameSelectIndex = 0, playerNameLength = 3;
+Player currentPlayer;
+Player highScores[3];
 
 byte matrix[matrixSize][matrixSize] = {
   {2, 2, 2, 0, 0, 2, 2, 2},
@@ -278,21 +281,10 @@ void setup() {
     Serial.begin(9600);
     lcd.begin(16, 2);
 
-    lcd.createChar(0, timerChar);
-    lcd.createChar(1, trophyChar);
-    lcd.createChar(2, wrenchChar);
-    lcd.createChar(3, amazedChar);
-    // lcd.createChar(4, explosion1Step);
-    // lcd.createChar(5, explosion2Step);
-    // lcd.createChar(6, explosion3Step);
-    // lcd.createChar(7, fullMatrix);
-    lcd.createChar(4, playButton);
-    lcd.createChar(5, heartChar);
-    lcd.createChar(6, skullChar);
-    lcd.createChar(7, upDownArrows);
+    createLCDChars();
 
-    matrixBrightness = EEPROM.get(matrixBrightnessAddress, matrixBrightness);
-    lcdBrightness = EEPROM.get(lcdBrightnessAddress, lcdBrightness);
+    getSettings();
+    getHighScores();
 
     lc.shutdown(0, false);
     lc.setIntensity(0, matrixBrightness);
@@ -308,12 +300,16 @@ void setup() {
     pinMode(pinX, INPUT);
     pinMode(pinY, INPUT);
     pinMode(pinSW, INPUT_PULLUP);
+    pinMode(lcdBacklight, OUTPUT);
 
+    analogWrite(lcdBacklight, lcdBrightness);
     lcd.setCursor(0, 0);
     lcd.print("Hello, player!");
     lcd.setCursor(0, 2);
     lcd.print("Remember:be fast!");
     startUpAt = millis();
+    option = 0;
+    selected = 0;
 }
 
 void loop() {
@@ -352,19 +348,28 @@ void loop() {
         lc.setIntensity(0, matrixBrightness);
     }
 
-    if(start) {
+    if(start && selectedName) {
         playGame();
+    }
+
+    if(start && !selectedName) {
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Name not set");
+        lcd.setCursor(0, 1);
+        lcd.print("Playing as aaa");
+        selectName = true;
     }
 
     if(selectName == true) {
         inputName();
     }
 
-    if(playDestroySound) {
+    if(playDestroySound && soundOn) {
         destroySound();
     }
 
-    if(playShootSound) {
+    if(playShootSound && soundOn) {
         shootSound();
     }
     if (!start && inMenu) {
@@ -372,6 +377,8 @@ void loop() {
         navigateMenu();
         selectInMenu();
     }
+
+    analogWrite(lcdBacklight, lcdBrightness);
 }
 
 void playGame() {
@@ -396,6 +403,10 @@ void playGame() {
             standby = true;
             coverMatrix();
             displayAnimation(trophyMatrix);
+            for(int i = 0; i < 3; i++) {
+                currentPlayer.name[i] = alphabet[playerName[i]];
+            }
+            currentPlayer.score = initialNoWalls - noWalls;
             Serial.print(F("Congrats, you finished in "));
             Serial.print((millis() - startTime) / second);
             Serial.println(" seconds");
@@ -413,11 +424,18 @@ void playGame() {
     }
     
     if(noWalls == 0 && !finished) {
+        for(int i = 0; i < 3; i++) {
+            currentPlayer.name[i] = alphabet[playerName[i]];
+        }
+        currentPlayer.score = initialNoWalls - noWalls;
+
         standby = true;
         coverMatrix();
         displayAnimation(trophyMatrix);
         resetBoard();
-        Serial.print(F("Congrats, you finished in "));
+        Serial.print(F("Congrats, "));
+        Serial.print(currentPlayer.name);
+        Serial.print(F(" you finished in "));
         Serial.print((millis() - startTime) / second);
         Serial.println(" seconds");
     }
@@ -791,6 +809,9 @@ void printMenu(int subMenu = 0) {
             break;
         case easy * select:
             roundTime = easyTime;
+            Serial.print(F("Round time: "));
+            Serial.println(roundTime);
+            scoreMultiplier = 1;
             start = 1;
             finished = 0;
             lost = 0;
@@ -809,6 +830,9 @@ void printMenu(int subMenu = 0) {
             break;
         case medium * select:
             roundTime = mediumTime;
+            Serial.print(F("Round time: "));
+            Serial.println(roundTime);
+            scoreMultiplier = mediumScoreMultiplier;
             start = 1;
             finished = 0;
             lost = 0;
@@ -827,6 +851,9 @@ void printMenu(int subMenu = 0) {
             break;
         case hard * select:
             roundTime = hardTime;
+            Serial.print(F("Round time: "));
+            Serial.println(roundTime);
+            scoreMultiplier = hardScoreMultiplier;
             start = 1;
             finished = 0;
             lost = 0;
@@ -862,13 +889,12 @@ void printMenu(int subMenu = 0) {
             lcd.write(byte(7));
             break;
         case lcdLow * select:
-            lcdBrightness = 200;
+            lcdBrightness = 100;
             EEPROM.put(lcdBrightnessAddress, lcdBrightness);
-            setLcdBrightness();
+            // setLcdBrightness();
             option = lcdLow;
             selected = lcdLow % 10;
             printMenu(option + selected);
-            EEPROM.put(lcdBrightnessAddress, lcdBrightness);
             break;
         case lcdMed:
             lcd.setCursor(0, 0);
@@ -879,13 +905,12 @@ void printMenu(int subMenu = 0) {
             lcd.write(byte(7));
             break;
         case lcdMed * select:
-            lcdBrightness = 600;
+            lcdBrightness = 190;
             EEPROM.put(lcdBrightnessAddress, lcdBrightness);
-            setLcdBrightness();
+            // setLcdBrightness();
             option = lcdLow;
             selected = lcdMed % 10;
             printMenu(option + selected);
-            EEPROM.put(lcdBrightnessAddress, lcdBrightness);
             break;
         case lcdHigh:
             lcd.setCursor(0, 0);
@@ -896,13 +921,12 @@ void printMenu(int subMenu = 0) {
             lcd.write(byte(7));
             break;
         case lcdHigh * select:
-            lcdBrightness = 1000;
+            lcdBrightness = 254;
             EEPROM.put(lcdBrightnessAddress, lcdBrightness);
-            setLcdBrightness();
+            // setLcdBrightness();
             option = lcdLow;
             selected = lcdHigh % 10;
             printMenu(option + selected);
-            EEPROM.put(lcdBrightnessAddress, lcdBrightness);
             break;
         case setMatrixBrightness:
             lcd.setCursor(0, 0);
@@ -923,13 +947,13 @@ void printMenu(int subMenu = 0) {
             lcd.write(byte(7));
             break;
         case matrixLow * select:
+            automaticBrightness = false;
             matrixBrightness = 2;
             EEPROM.put(matrixBrightnessAddress, matrixBrightness);
             lc.setIntensity(0, matrixBrightness);
             option = matrixLow;
             selected = matrixLow % 10;
             printMenu(option + selected);
-            EEPROM.put(matrixBrightnessAddress, matrixBrightness);
             break;
         case matrixMed:
             lcd.setCursor(0, 0);
@@ -940,13 +964,13 @@ void printMenu(int subMenu = 0) {
             lcd.write(byte(7));
             break;
         case matrixMed * select:
+            automaticBrightness = false;
             matrixBrightness = 7.5;
             EEPROM.put(matrixBrightnessAddress, matrixBrightness);
             lc.setIntensity(0, matrixBrightness);
             option = matrixLow;
             selected = matrixMed % 10;
             printMenu(option + selected);
-            EEPROM.put(matrixBrightnessAddress, matrixBrightness);
             break;
         case matrixHigh:
             lcd.setCursor(0, 0);
@@ -957,13 +981,13 @@ void printMenu(int subMenu = 0) {
             lcd.write(byte(7));
             break;
         case matrixHigh * select:
+            automaticBrightness = false;
             matrixBrightness = 15;
             EEPROM.put(matrixBrightnessAddress, matrixBrightness);
             lc.setIntensity(0, matrixBrightness);
             option = matrixLow;
             selected = matrixHigh % 10;
             printMenu(option + selected);
-            EEPROM.put(matrixBrightnessAddress, matrixBrightness);
             break;
         case matrixAuto:
             lcd.setCursor(0, 0);
@@ -975,8 +999,29 @@ void printMenu(int subMenu = 0) {
             break;
         case matrixAuto * select:
             automaticBrightness = !automaticBrightness;
+            EEPROM.put(matrixBrightnessAutoAddress, automaticBrightness);
+            // Serial.print(F("Automatic brightness: "));
+            // Serial.println(automaticBrightness);
             option = matrixLow;
             selected = matrixAuto % 10;
+            printMenu(option + selected);
+            break;
+        case soundSettings:
+            lcd.setCursor(0, 0);
+            lcd.write(byte(4));
+            lcd.print(" Settings ");
+            lcd.write(byte(2));
+            lcd.setCursor(1, 1);
+            lcd.print("Sound ");
+            lcd.print(soundOn ? "Off    " : "On     ");
+            lcd.write(byte(7));
+            Serial.println("Sound");
+            break;
+        case soundSettings * select:
+            soundOn = !soundOn;
+            EEPROM.put(soundSettingsAddress, soundOn);
+            option = setLCDBrightness;
+            selected = soundSettings % 10;
             printMenu(option + selected);
             break;
         case about:
@@ -1098,6 +1143,54 @@ void animateLCD(int ownChar) {
     lcd.clear();
 }
 
-void setLcdBrightness() {
-    analogWrite(lcdBacklight, lcdBrightness);
+// void setLcdBrightness() {
+//     analogWrite(lcdBacklight, lcdBrightness);
+// }
+
+void getSettings() {
+    EEPROM.get(matrixBrightnessAddress, matrixBrightness);
+    Serial.print(F("Matrix brightness: "));
+    Serial.println(matrixBrightness);
+    EEPROM.get(matrixBrightnessAutoAddress, automaticBrightness);
+    Serial.print(F("Automatic brightness: "));
+    Serial.println(automaticBrightness);
+    EEPROM.get(lcdBrightnessAddress, lcdBrightness);
+    Serial.print(F("LCD brightness: "));
+    Serial.println(lcdBrightness);
+    EEPROM.get(soundSettingsAddress, soundOn);
+    Serial.print(F("Sound: "));
+    Serial.println(soundOn);
 }
+
+void createLCDChars() {
+        lcd.createChar(0, timerChar);
+    lcd.createChar(1, trophyChar);
+    lcd.createChar(2, wrenchChar);
+    lcd.createChar(3, amazedChar);
+    // lcd.createChar(4, explosion1Step);
+    // lcd.createChar(5, explosion2Step);
+    // lcd.createChar(6, explosion3Step);
+    // lcd.createChar(7, fullMatrix);
+    lcd.createChar(4, playButton);
+    lcd.createChar(5, heartChar);
+    lcd.createChar(6, skullChar);
+    lcd.createChar(7, upDownArrows);
+}
+
+void getHighScores() {
+    for(int currentAddress = highScoresAddress; currentAddress < highScoresAddress + 3 * sizeof(Player); currentAddress += sizeof(Player)) {
+        EEPROM.get(currentAddress, highScores[(currentAddress - highScoresAddress) / sizeof(Player)]);
+        Serial.print("Aici este: ");
+        Serial.println(highScores[(currentAddress - highScoresAddress) / sizeof(Player)].name);
+        Serial.println(highScores[(currentAddress - highScoresAddress) / sizeof(Player)].score);
+    }
+}
+
+// void putDummyHighscores() {
+//     Player dummy1 = {"AAA", 10};
+//     Player dummy2 = {"BBB", 11};
+//     Player dummy3 = {"CCC", 12};
+//     EEPROM.put(highScoresAddress, dummy1);
+//     EEPROM.put(highScoresAddress + sizeof(Player), dummy2);
+//     EEPROM.put(highScoresAddress + 2 * sizeof(Player), dummy3);
+// }
