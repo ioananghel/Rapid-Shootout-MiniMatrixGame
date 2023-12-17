@@ -363,7 +363,10 @@ void loop() {
         lcd.print("Name not set");
         lcd.setCursor(0, 1);
         lcd.print("Playing as aaa");
-        selectName = true;
+        selectedName = true;
+        for(int i = 0; i < 3; i++) {
+            currentPlayer.name[i] = 'a';
+        }
     }
 
     if(selectName == true) {
@@ -408,9 +411,6 @@ void playGame() {
             standby = true;
             coverMatrix();
             displayAnimation(trophyMatrix);
-            for(int i = 0; i < 3; i++) {
-                currentPlayer.name[i] = alphabet[playerName[i]];
-            }
             currentPlayer.score = currentScore;
             Serial.print(F("Congrats, you finished in "));
             Serial.print((millis() - startTime) / second);
@@ -423,10 +423,6 @@ void playGame() {
             lcd.setCursor(0, 1);
             lcd.print("Score: ");
             lcd.print(currentScore);
-            for(int i = 0; i < 3; i++) {
-                currentPlayer.name[i] = alphabet[playerName[i]];
-            }
-            currentPlayer.score = currentScore;
 
             checkHighScores();
             resetBoard();
@@ -434,9 +430,6 @@ void playGame() {
     }
     
     if(noWalls == 0 && !finished) {
-        for(int i = 0; i < 3; i++) {
-            currentPlayer.name[i] = alphabet[playerName[i]];
-        }
         currentPlayer.score = currentScore;
 
         checkHighScores();
@@ -508,6 +501,9 @@ void inputName() {
     }
 
     if(digitalRead(pinSW) == 1 && millis() - lastChangeSW > debounceTime) {
+        for(int i = 0; i < 3; i++) {
+            currentPlayer.name[i] = alphabet[playerName[i]];
+        }
         lastChangeSW = millis();
         selectedName = true;
         selectName = false;
