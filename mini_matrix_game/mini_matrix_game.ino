@@ -61,16 +61,16 @@ bool start = 0, uncovered = 0;
 int noWalls = 0, initialNoWalls = 0;
 unsigned long startTime = 0;
 
-const int menu = 0, play = 1, easy = 10, medium = 11, hard = 12, settings = 2, setLCDBrightness = 20, lcdLow = 200, lcdMed = 201, lcdHigh = 202, setMatrixBrightness = 21, matrixLow = 210, matrixMed = 211, matrixHigh = 212, matrixAuto = 213, soundSettings = 22, about = 3, expandedAboutGameName = 30, expandedAboutCreatorName = 31, expandedAboutGitHub = 32, expandedAboutLinkedin = 33, nameSelect = 4;
+const int menu = 0, play = 1, easy = 10, medium = 11, hard = 12, settings = 2, setLCDBrightness = 20, lcdLow = 200, lcdMed = 201, lcdHigh = 202, setMatrixBrightness = 21, matrixLow = 210, matrixMed = 211, matrixHigh = 212, matrixAuto = 213, soundSettings = 22, about = 3, expandedAboutGameName = 30, expandedAboutCreatorName = 31, expandedAboutGitHub = 32, expandedAboutLinkedin = 33, nameSelect = 4, howToPlay = 5, leaderBoard = 6, firstHighScore = 60, secondHighScore = 61, thirdHighScore = 62;
 const int select = 10;
 const unsigned long easyTime = 90 * second, mediumTime = 60 * second, hardTime = 30 * second;
 const int mediumScoreMultiplier = 2, hardScoreMultiplier = 3;
 int scoreMultiplier = 1;
 const int easyLives = 5, mediumLives = 4, hardLives = 3;
-int lives = 3;
+int lives = 3, timerIndex = 0, scoreIndex = 0, currentScore = 0;
 unsigned long roundTime = easyTime;
 unsigned long lastUpdateTime = 0;
-int menuNo = 4, aboutNo = 3, settingsNo = 2, lcdNo = 2, matrixNo = 3;
+int menuNo = 4, aboutNo = 3, settingsNo = 2, lcdNo = 2, matrixNo = 3, highScoresNo = 2, difficultiesNo = 2;
 
 const int soundFrequencies = 3;
 int currentFrequency = 0;
@@ -177,12 +177,15 @@ class Bullet {
             if(matrix[xPos][yPos] == 1) {
                 playDestroySound = true;
                 if(xPos == currentPlayerPosition.x && yPos == currentPlayerPosition.y) {
-                    lcd.setCursor(lives - 1, 0);
+                    lcd.setCursor(4 + lives - 1, 0);
                     lcd.write(byte(6));
                     lives--;
                 }
                 else {
                     noWalls--;
+                    currentScore += scoreMultiplier;
+                    lcd.setCursor(scoreIndex + 1, 1);
+                    lcd.print(currentScore);
                 }
                 // Serial.println(noWalls);
                 matrix[xPos][yPos] = 0;
@@ -336,7 +339,7 @@ void loop() {
         lcd.print("You lost!");
         lcd.setCursor(0, 1);
         lcd.print("Score: ");
-        lcd.print(initialNoWalls - noWalls);
+        lcd.print(currentScore);
         resetBoard();
     }
 
@@ -394,9 +397,9 @@ void playGame() {
 
     if(millis() - lastUpdateTime > second) {
         lastUpdateTime = millis();
-        lcd.setCursor(1, 1);
+        lcd.setCursor(timerIndex + 1, 0);
         lcd.print("   ");
-        lcd.setCursor(1, 1);
+        lcd.setCursor(timerIndex + 1, 0);
         lcd.print((roundTime - (millis() - startTime)) / second);
         // Serial.print(F("Time left: "));
         // Serial.println((roundTime - (millis() - startTime)) / second);
@@ -408,7 +411,7 @@ void playGame() {
             for(int i = 0; i < 3; i++) {
                 currentPlayer.name[i] = alphabet[playerName[i]];
             }
-            currentPlayer.score = initialNoWalls - noWalls;
+            currentPlayer.score = currentScore;
             Serial.print(F("Congrats, you finished in "));
             Serial.print((millis() - startTime) / second);
             Serial.println(" seconds");
@@ -419,11 +422,11 @@ void playGame() {
             lcd.print("Time's up!");
             lcd.setCursor(0, 1);
             lcd.print("Score: ");
-            lcd.print(initialNoWalls - noWalls);
+            lcd.print(currentScore);
             for(int i = 0; i < 3; i++) {
                 currentPlayer.name[i] = alphabet[playerName[i]];
             }
-            currentPlayer.score = initialNoWalls - noWalls;
+            currentPlayer.score = currentScore;
 
             checkHighScores();
             resetBoard();
@@ -434,7 +437,7 @@ void playGame() {
         for(int i = 0; i < 3; i++) {
             currentPlayer.name[i] = alphabet[playerName[i]];
         }
-        currentPlayer.score = initialNoWalls - noWalls;
+        currentPlayer.score = currentScore;
 
         checkHighScores();
 
@@ -459,8 +462,8 @@ void playGame() {
 void inputName() {
     lcd.setCursor(1, 1);
     lcd.print(alphabet[playerName[0]]);
-    lcd.print(alphabet[playerName[1] + 1]);
-    lcd.print(alphabet[playerName[2] + 2]);
+    lcd.print(alphabet[playerName[1]]);
+    lcd.print(alphabet[playerName[2]]);
 
     readJoystick();
     if(xValue < lowerThresholdX && millis() - lastChangeX > inputDebounceTime) {
@@ -609,14 +612,23 @@ void actOnJoystick() {
 }
 
 void navigateMenu() {
-    if(option != 0 && option < 100) {
-        menuNo = option == 20 ? settingsNo : aboutNo;
+    if(option == 10) {
+        menuNo = difficultiesNo;
+    }
+    else if(option == 20) {
+        menuNo = settingsNo;
+    }
+    else if(option == 30) {
+        menuNo = aboutNo;
+    }
+    else if(option == 60) {
+        menuNo = highScoresNo;
     }
     else if(option == 200 || option == 210) {
         menuNo = option == 200 ? lcdNo : matrixNo;
     }
     else {
-        menuNo = 4;
+        menuNo = 6;
     }
     if(xValue < lowerThresholdX && millis() - lastChangeX > debounceTime) {
         lastChangeX = millis();
@@ -682,11 +694,37 @@ void selectInMenu(bool fromJoystick = false) {
 
 void inGameLCD() {
     lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.write(byte(5));
-    lcd.write(byte(5));
-    lcd.write(byte(5));
     lcd.setCursor(0, 1);
+    if(scoreMultiplier == 1) {
+        lcd.print("Easy ");
+        timerIndex = 10;
+        scoreIndex = 11;
+    }
+    else if(scoreMultiplier == 2) {
+        lcd.print("Medium ");
+        timerIndex = 9;
+        scoreIndex = 13;
+    }
+    else {
+        lcd.print("Hard ");
+        timerIndex = 8;
+        scoreIndex = 11;
+    }
+    lcd.print("Score: ");
+    lcd.print(currentScore);
+
+
+    lcd.setCursor(0, 0);
+    for(int i = 0; i < 3; i++) {
+        lcd.print(currentPlayer.name[i]);
+    }
+    // lcd.print(currentPlayer.name);
+    lcd.setCursor(4, 0);
+    for(int i = 0; i < lives; i++) {
+        lcd.write(byte(5));
+    }
+
+    lcd.print(" ");
     startTime = millis();
     lcd.write(byte(0));
     lcd.print((roundTime - (millis() - startTime)) / second);
@@ -824,6 +862,7 @@ void printMenu(int subMenu = 0) {
             start = 1;
             finished = 0;
             lost = 0;
+            currentScore = 0;
             lives = easyLives;
             startTime = millis();
             inMenu = false;
@@ -845,6 +884,7 @@ void printMenu(int subMenu = 0) {
             start = 1;
             finished = 0;
             lost = 0;
+            currentScore = 0;
             lives = mediumLives;
             startTime = millis();
             inMenu = false;
@@ -866,6 +906,7 @@ void printMenu(int subMenu = 0) {
             start = 1;
             finished = 0;
             lost = 0;
+            currentScore = 0;
             lives = hardLives;
             startTime = millis();
             inMenu = false;
@@ -1103,6 +1144,66 @@ void printMenu(int subMenu = 0) {
             selectName = true;
             inMenu = false;
             break;
+        case howToPlay:
+            lcd.setCursor(0, 0);
+            lcd.print("> How to play ");
+            lcd.write(byte(5));
+            lcd.write(byte(7));
+            Serial.println("How to play");
+            break;
+        case howToPlay * select:
+            lcd.setCursor(0, 0);
+            lcd.write(byte(4));
+            lcd.print(" How to play");
+            lcd.setCursor(13, 1);
+            lcd.print("<");
+            lcd.write(byte(7));
+            lcd.print(">");
+            Serial.println("How to play");
+            break;
+        case leaderBoard:
+            lcd.setCursor(0, 0);
+            lcd.print("> Leaderboard ");
+            lcd.write(byte(1));
+            lcd.write(byte(7));
+            Serial.println("Leaderboard");
+            break;
+        case firstHighScore:
+            lcd.setCursor(0, 0);
+            lcd.write(byte(4));
+            lcd.print(" Leaderboard");
+            lcd.setCursor(1, 1);
+            lcd.print("1. ");
+            lcd.print(highScores[2].name);
+            lcd.print(" ");
+            lcd.print(highScores[2].score);
+            lcd.print(" ");
+            lcd.write(byte(7));
+            break;
+        case secondHighScore:
+            lcd.setCursor(0, 0);
+            lcd.write(byte(4));
+            lcd.print(" Leaderboard");
+            lcd.setCursor(1, 1);
+            lcd.print("2. ");
+            lcd.print(highScores[1].name);
+            lcd.print(" ");
+            lcd.print(highScores[1].score);
+            lcd.print(" ");
+            lcd.write(byte(7));
+            break;
+        case thirdHighScore:
+            lcd.setCursor(0, 0);
+            lcd.write(byte(4));
+            lcd.print(" Leaderboard");
+            lcd.setCursor(1, 1);
+            lcd.print("3. ");
+            lcd.print(highScores[0].name);
+            lcd.print(" ");
+            lcd.print(highScores[0].score);
+            lcd.print(" ");
+            lcd.write(byte(7));
+            break;
         default:
             Serial.print(F("Invalid options: "));
             Serial.println(subMenu);
@@ -1122,7 +1223,9 @@ void displayAnimation(byte matrix[matrixSize][matrixSize]) {
 void resetBoard() {
     for(int row = 0; row < matrixSize; row++) {
         for(int col = 0; col < matrixSize; col++) {
-            matrix[row][col] = 0;
+            if(matrix[row][col] == 1) {
+                matrix[row][col] = 0;
+            }
         }
     }
 
