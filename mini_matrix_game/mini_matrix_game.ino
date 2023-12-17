@@ -88,12 +88,13 @@ direction left = {-1, 0};
 direction right = {1, 0};
 direction currentDirection = {0, 0};
 direction currentPlayerPosition =  {0, 0};
+direction currentRoom = {0, 0};
 
 Player currentPlayer;
 Player highScores[3];
 bool newHighScore = false;
 
-byte matrix[matrixSize][matrixSize] = {
+byte matrix00[matrixSize][matrixSize] = {
   {2, 2, 2, 0, 0, 2, 2, 2},
   {2, 0, 0, 0, 0, 0, 0, 2},
   {2, 0, 0, 0, 0, 0, 0, 2},
@@ -103,6 +104,38 @@ byte matrix[matrixSize][matrixSize] = {
   {2, 0, 0, 0, 0, 0, 0, 2},
   {2, 2, 2, 0, 0, 2, 2, 2}  
 };
+byte matrix01[matrixSize][matrixSize] = {
+  {2, 2, 2, 0, 0, 2, 2, 2},
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 0, 0, 0, 0, 0, 0},
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {2, 2, 2, 0, 0, 2, 2, 2}  
+};
+byte matrix10[matrixSize][matrixSize] = {
+  {2, 2, 2, 0, 0, 2, 2, 2},
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 0, 0, 0, 0, 0, 0},
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {2, 2, 2, 0, 0, 2, 2, 2}  
+};
+byte matrix11[matrixSize][matrixSize] = {
+  {2, 2, 2, 0, 0, 2, 2, 2},
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 0, 0, 0, 0, 0, 0},
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {2, 0, 0, 0, 0, 0, 0, 2},
+  {2, 2, 2, 0, 0, 2, 2, 2}  
+};
+
+byte *currentMatrix = matrix00[0];
 
 void updateMatrix();
 void printMenu(int subMenu = 0);
@@ -174,7 +207,7 @@ class Bullet {
                 // return 0;
             }
 
-            if(matrix[xPos][yPos] == 1) {
+            if((currentMatrix + xPos * matrixSize)[yPos] == 1) {
                 playDestroySound = true;
                 if(xPos == currentPlayerPosition.x && yPos == currentPlayerPosition.y) {
                     lcd.setCursor(4 + lives - 1, 0);
@@ -188,19 +221,19 @@ class Bullet {
                     lcd.print(currentScore);
                 }
                 // Serial.println(noWalls);
-                matrix[xPos][yPos] = 0;
-                matrix[xLastPos][yLastPos] = 0;
+                (currentMatrix + xPos * matrixSize)[yPos] = 0;
+                (currentMatrix + xLastPos * matrixSize)[yLastPos] = 0;
                 updateMatrix();
                 return 0;
             }
-            if(matrix[xPos][yPos] == 2) {
+            if((currentMatrix + xPos * matrixSize)[yPos] == 2) {
                 playDestroySound = true;
-                matrix[xLastPos][yLastPos] = 0;
+                (currentMatrix + xLastPos * matrixSize)[yLastPos] = 0;
                 updateMatrix();
                 return 0;
             }
             if(currentTravel == maxBulletTravel) {
-                matrix[xLastPos][yLastPos] = 0;
+                (currentMatrix + xLastPos * matrixSize)[yLastPos] = 0;
                 updateMatrix();
                 return 0;
             }
@@ -298,7 +331,7 @@ void setup() {
 
     randomSeed(analogRead(A2));
     randomStartPos();
-    matrix[xPos][yPos] = 1;
+    (currentMatrix + xPos * matrixSize)[yPos] = 1;
     generateWalls();
     // updateMatrix();
 
@@ -571,7 +604,7 @@ void coverMatrix() {
 void uncoverMatrix() {
     for (int row = 0; row < matrixSize; row++) {
         for (int col = 0; col < matrixSize; col++) {
-            if(matrix[row][col] == 0) {
+            if((currentMatrix + row * matrixSize)[col] == 0) {
                 lc.setLed(0, row, col, false);
             }
             delay(25);
@@ -745,26 +778,75 @@ void move(direction dir) {
     yPos = currentPlayerPosition.y + dir.y;
     if(xPos < 0) {
         xPos = matrixSize - 1;
+        currentRoom.y--;
+        if(currentRoom.y < 0) {
+            currentRoom.x == 0 ? currentMatrix = matrix01[0] : currentMatrix = matrix11[0];
+            currentRoom.y = 1;
+        }
+        else {
+            currentRoom.x == 0 ? currentMatrix = matrix00[0] : currentMatrix = matrix10[0];
+        }
+        Serial.print("In room: ");
+        Serial.print(currentRoom.x);
+        Serial.print(", ");
+        Serial.println(currentRoom.y);
     }
     if(yPos < 0) {
         yPos = matrixSize - 1;
+        currentRoom.x--;
+        if(currentRoom.x < 0) {
+            currentRoom.y == 0 ? currentMatrix = matrix10[0] : currentMatrix = matrix11[0];
+            currentRoom.x = 1;
+        }
+        else {
+            currentRoom.y == 0 ? currentMatrix = matrix00[0] : currentMatrix = matrix01[0];
+        }
+        Serial.print("In room: ");
+        Serial.print(currentRoom.x);
+        Serial.print(", ");
+        Serial.println(currentRoom.y);
     }
     if(xPos > matrixSize - 1) {
         xPos = 0;
+        currentRoom.y++;
+        if(currentRoom.y > roomSize - 1) {
+            currentRoom.x == 0 ? currentMatrix = matrix00[0] : currentMatrix = matrix10[0];
+            currentRoom.y = 0;
+        }
+        else {
+            currentRoom.x == 0 ? currentMatrix = matrix01[0] : currentMatrix = matrix11[0];
+        }
+        Serial.print("In room: ");
+        Serial.print(currentRoom.x);
+        Serial.print(", ");
+        Serial.println(currentRoom.y);
+        
     }
     if(yPos > matrixSize - 1) {
         yPos = 0;
+        currentRoom.x++;
+        if(currentRoom.x > roomSize - 1) {
+            currentRoom.y == 0 ? currentMatrix = matrix00[0] : currentMatrix = matrix01[0];
+            currentRoom.x = 0;
+        }
+        else {
+            currentRoom.y == 0 ? currentMatrix = matrix10[0] : currentMatrix = matrix11[0];
+        }
+        Serial.print("In room: ");
+        Serial.print(currentRoom.x);
+        Serial.print(", ");
+        Serial.println(currentRoom.y);
     }
 
-    if(matrix[xPos][yPos]) {
+    if((currentMatrix + xPos * matrixSize)[yPos]) {
         return;
     }
 
     // currentPlayerPosition.x = xPos;
     // currentPlayerPosition.y = yPos;
 
-    matrix[xPos][yPos] = 1;
-    matrix[currentPlayerPosition.x][currentPlayerPosition.y] = 0;
+    (currentMatrix + xPos * matrixSize)[yPos] = 1;
+    (currentMatrix + currentPlayerPosition.x * matrixSize)[currentPlayerPosition.y] = 0;
     updateMatrix();
     currentPlayerPosition.x = xPos;
     currentPlayerPosition.y = yPos;
@@ -773,7 +855,7 @@ void move(direction dir) {
 void updateMatrix() {
     for (int row = 0; row < matrixSize; row++) {
         for (int col = 0; col < matrixSize; col++) {
-            lc.setLed(0, row, col, matrix[row][col]);
+            lc.setLed(0, row, col, (currentMatrix + row * matrixSize)[col]);
         }
     }
 }
@@ -784,11 +866,11 @@ void randomStartPos() {
     xPos = random() % matrixSize;
     yPos = random() % matrixSize;
 
-    if(matrix[xPos][yPos]) {
+    if((currentMatrix + xPos * matrixSize)[yPos]) {
         randomStartPos();
     }
     else {
-        matrix[xPos][yPos] = 1;
+        (currentMatrix + xPos * matrixSize)[yPos] = 1;
     }
 
     currentPlayerPosition.x = xPos;
@@ -807,19 +889,24 @@ void generateWalls() {
 
     // noWalls = random() % 17 + 32;
     noWalls = random() % 11 + 22;
+    // noWalls = 2;
     // noWalls = 0;
-    initialNoWalls = noWalls;
+    initialNoWalls = noWalls * 4;
     for(int i = 0; i < noWalls; i++) {
         int x = random() % matrixSize;
         int y = random() % matrixSize;
 
-        if(matrix[x][y]) {
+        if(matrix00[x][y]) {
             i--;
         }
         else{
-            matrix[x][y] = 1;
+            matrix00[x][y] = 1;
+            matrix01[x][y] = 1;
+            matrix10[x][y] = 1;
+            matrix11[x][y] = 1;
         }
     }
+    noWalls *= 4;
 }
 
 void printMenu(int subMenu = 0) {
@@ -1219,8 +1306,8 @@ void displayAnimation(byte matrix[matrixSize][matrixSize]) {
 void resetBoard() {
     for(int row = 0; row < matrixSize; row++) {
         for(int col = 0; col < matrixSize; col++) {
-            if(matrix[row][col] == 1) {
-                matrix[row][col] = 0;
+            if((currentMatrix + row * matrixSize)[col] == 1) {
+                (currentMatrix + row * matrixSize)[col] = 0;
             }
         }
     }
@@ -1233,7 +1320,7 @@ void resetBoard() {
     start = 0;
     randomSeed(analogRead(A2));
     randomStartPos();
-    matrix[xPos][yPos] = 1;
+    (currentMatrix + xPos * matrixSize)[yPos] = 1;
     generateWalls();
 }
 

@@ -1,4 +1,5 @@
 const byte matrixSize = 8;
+const byte roomSize = 2;
 
 
 byte trophyMatrix[matrixSize][matrixSize] = {
