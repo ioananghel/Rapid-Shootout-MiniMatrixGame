@@ -91,6 +91,7 @@ direction currentPlayerPosition =  {0, 0};
 
 Player currentPlayer;
 Player highScores[3];
+bool newHighScore = false;
 
 byte matrix[matrixSize][matrixSize] = {
   {2, 2, 2, 0, 0, 2, 2, 2},
@@ -278,6 +279,7 @@ class BulletList {
 BulletList bullets;
 
 void setup() {
+    // putDummyHighscores();
     Serial.begin(9600);
     lcd.begin(16, 2);
 
@@ -418,7 +420,12 @@ void playGame() {
             lcd.setCursor(0, 1);
             lcd.print("Score: ");
             lcd.print(initialNoWalls - noWalls);
+            for(int i = 0; i < 3; i++) {
+                currentPlayer.name[i] = alphabet[playerName[i]];
+            }
+            currentPlayer.score = initialNoWalls - noWalls;
 
+            checkHighScores();
             resetBoard();
         }
     }
@@ -428,6 +435,8 @@ void playGame() {
             currentPlayer.name[i] = alphabet[playerName[i]];
         }
         currentPlayer.score = initialNoWalls - noWalls;
+
+        checkHighScores();
 
         standby = true;
         coverMatrix();
@@ -1163,7 +1172,7 @@ void getSettings() {
 }
 
 void createLCDChars() {
-        lcd.createChar(0, timerChar);
+    lcd.createChar(0, timerChar);
     lcd.createChar(1, trophyChar);
     lcd.createChar(2, wrenchChar);
     lcd.createChar(3, amazedChar);
@@ -1178,19 +1187,61 @@ void createLCDChars() {
 }
 
 void getHighScores() {
+    int i = 0;
     for(int currentAddress = highScoresAddress; currentAddress < highScoresAddress + 3 * sizeof(Player); currentAddress += sizeof(Player)) {
-        EEPROM.get(currentAddress, highScores[(currentAddress - highScoresAddress) / sizeof(Player)]);
-        Serial.print("Aici este: ");
-        Serial.println(highScores[(currentAddress - highScoresAddress) / sizeof(Player)].name);
-        Serial.println(highScores[(currentAddress - highScoresAddress) / sizeof(Player)].score);
+        EEPROM.get(currentAddress, highScores[i++]);
+    }
+    for(int i = 0; i < 3; i++) {
+      Serial.print(i);
+      Serial.print(" este ");
+      Serial.print(highScores[i].name);
     }
 }
 
-// void putDummyHighscores() {
-//     Player dummy1 = {"AAA", 10};
-//     Player dummy2 = {"BBB", 11};
-//     Player dummy3 = {"CCC", 12};
-//     EEPROM.put(highScoresAddress, dummy1);
-//     EEPROM.put(highScoresAddress + sizeof(Player), dummy2);
-//     EEPROM.put(highScoresAddress + 2 * sizeof(Player), dummy3);
-// }
+void putDummyHighscores() {
+    Player dummy1 = {"AAA", 10};
+    Player dummy2 = {"BBB", 11};
+    Player dummy3 = {"CCC", 12};
+    EEPROM.put(highScoresAddress, dummy1);
+    EEPROM.put(highScoresAddress + sizeof(Player), dummy2);
+    EEPROM.put(highScoresAddress + 2 * sizeof(Player), dummy3);
+}
+
+void checkHighScores() {
+    Serial.print("Checcking ");
+    Serial.print(currentPlayer.name);
+    Serial.print(" ");
+    Serial.println(currentPlayer.score);
+    for(int i = 2; i >= 0; i--) {
+        Serial.print(highScores[i].name);
+        if(currentPlayer.score >= highScores[i].score) {
+            Serial.println(" is higher");
+            newHighScore = true;
+            for(int j = 0; j < i; j++) {
+                Serial.print("Moving ");
+                Serial.print(highScores[j + 1].name);
+                Serial.print(" ");
+                Serial.println(highScores[j + 1].score);
+                highScores[j] = highScores[j + 1];
+            }
+            highScores[i] = currentPlayer;
+            break;
+        }
+    }
+    if(newHighScore) {
+        lcd.clear();
+        animateLCD(1);
+        lcd.setCursor(0, 0);
+        lcd.print("New high score!");
+        lcd.setCursor(0, 1);
+        lcd.print("Score: ");
+        lcd.print(currentPlayer.score);
+        newHighScore = false;
+    }
+    for(int i = 0; i < 3; i++) {
+        Serial.print(highScores[i].name);
+        Serial.print(" ");
+        Serial.println(highScores[i].score);
+        EEPROM.put(highScoresAddress + i * sizeof(Player), highScores[i]);
+    }
+}
