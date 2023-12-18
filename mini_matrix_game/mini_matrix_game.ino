@@ -72,6 +72,7 @@ int lives = 3, timerIndex = 0, scoreIndex = 0, currentScore = 0;
 unsigned long roundTime = easyTime;
 unsigned long lastUpdateTime = 0;
 int menuNo = 4, aboutNo = 3, settingsNo = 2, lcdNo = 2, matrixNo = 3, highScoresNo = 2, difficultiesNo = 2;
+bool lockMatrix = false;
 
 const int soundFrequencies = 3;
 int currentFrequency = 0;
@@ -142,6 +143,7 @@ void updateMatrix();
 void pulseMatrix();
 void printMenu(int subMenu = 0);
 void selectInMenu(bool fromJoystick = false);
+void inGameLCD(bool startNow = false);
 
 class Bullet {
     int xPos, yPos;
@@ -242,7 +244,7 @@ class Bullet {
                 updateMatrix();
                 return 0;
             }
-            if((currentMatrix + xPos * matrixSize)[yPos] == 2) {
+            if((currentMatrix + xPos * matrixSize)[yPos] == 2 || (currentMatrix + xPos * matrixSize)[yPos] == 3) {
                 playDestroySound = true;
                 (currentMatrix + xLastPos * matrixSize)[yLastPos] = 0;
                 updateMatrix();
@@ -444,7 +446,7 @@ void playGame() {
         uncoverMatrix();
         uncovered = 1;
         Serial.println("Game started");
-        inGameLCD();
+        inGameLCD(true);
     }
 
     if(millis() - lastUpdateTime > second) {
@@ -460,6 +462,12 @@ void playGame() {
         lcd.print(streak);
         // Serial.print(F("Time left: "));
         // Serial.println((roundTime - (millis() - startTime)) / second);
+        if((roundTime - (millis() - startTime)) / second == 6) {
+            last5Seconds();
+        }
+        if((roundTime - (millis() - startTime)) / second == 5) {
+            inGameLCD();
+        }
 
         if((roundTime - (millis() - startTime)) / second == 0) {
             standby = true;
@@ -479,6 +487,7 @@ void playGame() {
             lcd.print(currentScore);
 
             checkHighScores();
+            Serial.print(F("Going into reset"));
             resetBoard();
         }
     }
@@ -742,23 +751,27 @@ void selectInMenu(bool fromJoystick = false) {
     }
 }
 
-void inGameLCD() {
+void inGameLCD(bool startNow = false) {
     lcd.clear();
+    int setLives = 0;
     lcd.setCursor(0, 1);
     if(scoreMultiplier == 1) {
         lcd.print("Easy ");
         timerIndex = 10;
         scoreIndex = 11;
+        setLives = easyLives;
     }
     else if(scoreMultiplier == 2) {
         lcd.print("Medium ");
         timerIndex = 9;
         scoreIndex = 13;
+        setLives = mediumLives;
     }
     else {
         lcd.print("Hard ");
         timerIndex = 8;
         scoreIndex = 11;
+        setLives = hardLives;
     }
     lcd.print("Score: ");
     lcd.print(currentScore);
@@ -773,9 +786,17 @@ void inGameLCD() {
     for(int i = 0; i < lives; i++) {
         lcd.write(byte(5));
     }
+    if(lives < setLives) {
+        lcd.setCursor(4 + lives, 0);
+        lcd.write(byte(6));
+    }
+    for(int i = 0; i < setLives - lives; i++) {
+        lcd.write(byte(7));
+    }
 
     lcd.print(" ");
-    startTime = millis();
+    if(startNow)
+        startTime = millis();
     lcd.write(byte(0));
     lcd.print((roundTime - (millis() - startTime)) / second);
     lastUpdateTime = millis();
@@ -1330,7 +1351,7 @@ void displayAnimation(byte matrix[matrixSize][matrixSize]) {
 void resetBoard() {
     for(int row = 0; row < matrixSize; row++) {
         for(int col = 0; col < matrixSize; col++) {
-            if((currentMatrix + row * matrixSize)[col] == 1) {
+            if((currentMatrix + row * matrixSize)[col] != 2) {
                 (currentMatrix + row * matrixSize)[col] = 0;
             }
         }
@@ -1342,6 +1363,7 @@ void resetBoard() {
     option = 0;
     selected = 0;
     start = 0;
+    lockMatrix = false;
     randomSeed(analogRead(A2));
     randomStartPos();
     (currentMatrix + xPos * matrixSize)[yPos] = 1;
@@ -1454,4 +1476,29 @@ void checkHighScores() {
         Serial.println(highScores[i].score);
         EEPROM.put(highScoresAddress + i * sizeof(Player), highScores[i]);
     }
+    Serial.println("High scores updated");
+}
+
+void last5Seconds() {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Last 5 seconds!");
+    lcd.setCursor(0, 1);
+    lcd.print("DOUBLE POINTS!");
+    lcd.write(byte(3));
+    scoreMultiplier *= 2;
+    lockMatrix = true;
+
+    shutMatrix();
+}
+
+void shutMatrix() {
+    (currentMatrix)[3] = 3;
+    (currentMatrix)[4] = 3;
+    (currentMatrix + 3 * matrixSize)[0] = 3;
+    (currentMatrix + 3 * matrixSize)[matrixSize - 1] = 3;
+    (currentMatrix + 4 * matrixSize)[0] = 3;
+    (currentMatrix + 4 * matrixSize)[matrixSize - 1] = 3;
+    (currentMatrix + (matrixSize - 1) * matrixSize)[3] = 3;
+    (currentMatrix + (matrixSize - 1) * matrixSize)[4] = 3;
 }
