@@ -58,7 +58,8 @@ bool inMenu = true, standby = false;
 int selected = 0, option = 0;
 int soundOn = true;
 bool start = 0, uncovered = 0;
-int noWalls = 0, initialNoWalls = 0;
+int noWalls = 0, initialNoWalls = 0, streak = 0;
+unsigned long streakStart = 0, streakTime = 900;
 unsigned long startTime = 0;
 
 const int menu = 0, play = 1, easy = 10, medium = 11, hard = 12, settings = 2, setLCDBrightness = 20, lcdLow = 200, lcdMed = 201, lcdHigh = 202, setMatrixBrightness = 21, matrixLow = 210, matrixMed = 211, matrixHigh = 212, matrixAuto = 213, soundSettings = 22, about = 3, expandedAboutGameName = 30, expandedAboutCreatorName = 31, expandedAboutGitHub = 32, expandedAboutLinkedin = 33, nameSelect = 4, howToPlay = 5, leaderBoard = 6, firstHighScore = 60, secondHighScore = 61, thirdHighScore = 62;
@@ -138,6 +139,7 @@ byte matrix11[matrixSize][matrixSize] = {
 byte *currentMatrix = matrix00[0];
 
 void updateMatrix();
+void pulseMatrix();
 void printMenu(int subMenu = 0);
 void selectInMenu(bool fromJoystick = false);
 
@@ -216,6 +218,20 @@ class Bullet {
                 }
                 else {
                     noWalls--;
+                    if(millis() - streakStart < streakTime) {
+                        streak++;
+                        lcd.setCursor(15, 0);
+                        lcd.print(streak);
+                        // pulseMatrix();
+                        streakStart = millis();
+                    }
+                    else {
+                        currentScore += streak * scoreMultiplier;
+                        streak = 0;
+                        lcd.setCursor(15, 0);
+                        lcd.print(streak);
+                    }
+                    streakStart = millis();
                     currentScore += scoreMultiplier;
                     lcd.setCursor(scoreIndex + 1, 1);
                     lcd.print(currentScore);
@@ -437,13 +453,18 @@ void playGame() {
         lcd.print("   ");
         lcd.setCursor(timerIndex + 1, 0);
         lcd.print((roundTime - (millis() - startTime)) / second);
+        lcd.setCursor(15, 0);
+        if(millis() - streakStart > streakTime) {
+            streak = 0;
+        }
+        lcd.print(streak);
         // Serial.print(F("Time left: "));
         // Serial.println((roundTime - (millis() - startTime)) / second);
 
         if((roundTime - (millis() - startTime)) / second == 0) {
             standby = true;
             coverMatrix();
-            displayAnimation(trophyMatrix);
+            displayAnimation(flippedTrophyMatrix);
             currentPlayer.score = currentScore;
             Serial.print(F("Congrats, you finished in "));
             Serial.print((millis() - startTime) / second);
@@ -469,7 +490,7 @@ void playGame() {
 
         standby = true;
         coverMatrix();
-        displayAnimation(trophyMatrix);
+        displayAnimation(flippedTrophyMatrix);
         resetBoard();
         Serial.print(F("Congrats, "));
         Serial.print(currentPlayer.name);
@@ -758,6 +779,9 @@ void inGameLCD() {
     lcd.write(byte(0));
     lcd.print((roundTime - (millis() - startTime)) / second);
     lastUpdateTime = millis();
+
+    lcd.setCursor(14, 0);
+    lcd.print("X0");
 }
 
 void bulletsTravel() {
