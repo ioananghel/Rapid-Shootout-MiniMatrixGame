@@ -64,7 +64,8 @@ unsigned long startTime = 0;
 
 const int menu = 0, play = 1, easy = 10, medium = 11, hard = 12, settings = 2, setLCDBrightness = 20, lcdLow = 200, lcdMed = 201, lcdHigh = 202, setMatrixBrightness = 21, matrixLow = 210, matrixMed = 211, matrixHigh = 212, matrixAuto = 213, soundSettings = 22, about = 3, expandedAboutGameName = 30, expandedAboutCreatorName = 31, expandedAboutGitHub = 32, expandedAboutLinkedin = 33, nameSelect = 4, howToPlay = 5, leaderBoard = 6, firstHighScore = 60, secondHighScore = 61, thirdHighScore = 62;
 const int select = 10;
-const unsigned long easyTime = 90 * second, mediumTime = 60 * second, hardTime = 30 * second;
+// const unsigned long easyTime = 90 * second, mediumTime = 60 * second, hardTime = 30 * second;
+const unsigned long easyTime = 90, mediumTime = 60, hardTime = 30;
 const int mediumScoreMultiplier = 2, hardScoreMultiplier = 3;
 int scoreMultiplier = 1;
 const int easyLives = 5, mediumLives = 4, hardLives = 3;
@@ -158,7 +159,7 @@ class Bullet {
             this->dir = dir;
             this->currentTravel = currentTravel;
 
-            // Serial.println("Bullet created");
+            // // Serial.println("Bullet created");
             playShootSound = true;
         }
         Bullet& operator=(const Bullet& other) {
@@ -238,7 +239,7 @@ class Bullet {
                     lcd.setCursor(scoreIndex + 1, 1);
                     lcd.print(currentScore);
                 }
-                // Serial.println(noWalls);
+                // // Serial.println(noWalls);
                 (currentMatrix + xPos * matrixSize)[yPos] = 0;
                 (currentMatrix + xLastPos * matrixSize)[yLastPos] = 0;
                 updateMatrix();
@@ -334,7 +335,7 @@ BulletList bullets;
 
 void setup() {
     // putDummyHighscores();
-    Serial.begin(9600);
+    // Serial.begin(9600);
     lcd.begin(16, 2);
 
     createLCDChars();
@@ -384,7 +385,7 @@ void loop() {
     if(lives == 0 && !finished) {
         standby = true;
         coverMatrix();
-        Serial.println("You lost!");
+        // Serial.println("You lost!");
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("You lost!");
@@ -442,10 +443,11 @@ void loop() {
 
 void playGame() {
     if(!uncovered) {
+        lcd.createChar(3, amazedChar);
         coverMatrix();
         uncoverMatrix();
         uncovered = 1;
-        Serial.println("Game started");
+        // Serial.println("Game started");
         inGameLCD(true);
     }
 
@@ -454,31 +456,31 @@ void playGame() {
         lcd.setCursor(timerIndex + 1, 0);
         lcd.print("   ");
         lcd.setCursor(timerIndex + 1, 0);
-        lcd.print((roundTime - (millis() - startTime)) / second);
+        lcd.print(roundTime - (millis() - startTime) / second);
         lcd.setCursor(15, 0);
         if(millis() - streakStart > streakTime) {
             streak = 0;
         }
         lcd.print(streak);
-        // Serial.print(F("Time left: "));
-        // Serial.println((roundTime - (millis() - startTime)) / second);
-        if((roundTime - (millis() - startTime)) / second == 6) {
+        // // Serial.print(F("Time left: "));
+        // // Serial.println((roundTime - (millis() - startTime)) / second);
+        if(roundTime - (millis() - startTime) / second == 6) {
             last5Seconds();
         }
-        if((roundTime - (millis() - startTime)) / second == 5) {
+        if(roundTime - (millis() - startTime) / second == 5) {
             inGameLCD();
         }
 
-        if((roundTime - (millis() - startTime)) / second == 0) {
+        if(roundTime - (millis() - startTime) / second == 0) {
             standby = true;
             coverMatrix();
             displayAnimation(flippedTrophyMatrix);
             currentPlayer.score = currentScore;
-            Serial.print(F("Congrats, you finished in "));
-            Serial.print((millis() - startTime) / second);
-            Serial.println(" seconds");
+            // Serial.print(F("Congrats, you finished in "));
+            // Serial.print((millis() - startTime) / second);
+            // Serial.println(" seconds");
             animateLCD(3);
-            Serial.println("Time's up!");
+            // Serial.println("Time's up!");
             lcd.clear();
             lcd.setCursor(0, 0);
             lcd.print("Time's up!");
@@ -487,7 +489,7 @@ void playGame() {
             lcd.print(currentScore);
 
             checkHighScores();
-            Serial.print(F("Going into reset"));
+            // Serial.print(F("Going into reset"));
             resetBoard();
         }
     }
@@ -501,11 +503,11 @@ void playGame() {
         coverMatrix();
         displayAnimation(flippedTrophyMatrix);
         resetBoard();
-        Serial.print(F("Congrats, "));
-        Serial.print(currentPlayer.name);
-        Serial.print(F(" you finished in "));
-        Serial.print((millis() - startTime) / second);
-        Serial.println(" seconds");
+        // Serial.print(F("Congrats, "));
+        // Serial.print(currentPlayer.name);
+        // Serial.print(F(" you finished in "));
+        // Serial.print((millis() - startTime) / second);
+        // Serial.println(" seconds");
     }
 
     blinkLEDs();
@@ -530,10 +532,10 @@ void inputName() {
         else {
             playerName[playerNameSelectIndex]--;
         }
-        Serial.print(F("values: "));
-        Serial.print(playerName[0]);
-        Serial.print(playerName[1]);
-        Serial.println(playerName[2]);
+        // Serial.print(F("values: "));
+        // Serial.print(playerName[0]);
+        // Serial.print(playerName[1]);
+        // Serial.println(playerName[2]);
     }
     else if(xValue > upperThresholdX && millis() - lastChangeX > inputDebounceTime) {        
         lastChangeX = millis();
@@ -543,10 +545,10 @@ void inputName() {
         else {
             playerName[playerNameSelectIndex]++;
         }
-        Serial.print(F("values: "));
-        Serial.print(playerName[0]);
-        Serial.print(playerName[1]);
-        Serial.println(playerName[2]);
+        // Serial.print(F("values: "));
+        // Serial.print(playerName[0]);
+        // Serial.print(playerName[1]);
+        // Serial.println(playerName[2]);
     }
     if(yValue < lowerThresholdY && millis() - lastChangeY > inputDebounceTime) {
         lastChangeY = millis();
@@ -571,10 +573,10 @@ void inputName() {
         selectedName = true;
         selectName = false;
         inMenu = true;
-        Serial.print(F("Selected name: "));
-        Serial.print(alphabet[playerName[0]]);
-        Serial.print(alphabet[playerName[1]]);
-        Serial.println(alphabet[playerName[2]]);
+        // Serial.print(F("Selected name: "));
+        // Serial.print(alphabet[playerName[0]]);
+        // Serial.print(alphabet[playerName[1]]);
+        // Serial.println(alphabet[playerName[2]]);
     }
 }
 
@@ -695,8 +697,8 @@ void navigateMenu() {
         if(selected > menuNo) {
             selected = 0;
         }
-        Serial.print(F("Navigating to: "));
-        Serial.println(option + selected);
+        // Serial.print(F("Navigating to: "));
+        // Serial.println(option + selected);
         printMenu(option + selected);
     }
     else if(xValue > upperThresholdX && millis() - lastChangeX > debounceTime) {        
@@ -705,8 +707,8 @@ void navigateMenu() {
         if(selected < 0) {
             selected = menuNo;
         }
-        Serial.print(F("Navigating to: "));
-        Serial.println(option + selected);
+        // Serial.print(F("Navigating to: "));
+        // Serial.println(option + selected);
         printMenu(option + selected);
     }
 
@@ -734,10 +736,10 @@ void actOnSW() {
 
 void selectInMenu(bool fromJoystick = false) {
     if((digitalRead(pinSW) == 1 || fromJoystick) && millis() - lastChangeSW > debounceTime) {
-        Serial.print(F("Selecting in menu: selected = "));
-        Serial.print(selected);
-        Serial.print(F(", option = "));
-        Serial.println(option);
+        // Serial.print(F("Selecting in menu: selected = "));
+        // Serial.print(selected);
+        // Serial.print(F(", option = "));
+        // Serial.println(option);
         lcd.createChar(4, downwardArrow);
         lastChangeSW = millis();
         if(option == 0 && selected == 0 || option / 10 == 3) {
@@ -798,7 +800,7 @@ void inGameLCD(bool startNow = false) {
     if(startNow)
         startTime = millis();
     lcd.write(byte(0));
-    lcd.print((roundTime - (millis() - startTime)) / second);
+    lcd.print(roundTime - (millis() - startTime) / second);
     lastUpdateTime = millis();
 
     lcd.setCursor(14, 0);
@@ -831,10 +833,10 @@ void move(direction dir) {
         else {
             currentRoom.x == 0 ? currentMatrix = matrix00[0] : currentMatrix = matrix10[0];
         }
-        Serial.print("In room: ");
-        Serial.print(currentRoom.x);
-        Serial.print(", ");
-        Serial.println(currentRoom.y);
+        // Serial.print("In room: ");
+        // Serial.print(currentRoom.x);
+        // Serial.print(", ");
+        // Serial.println(currentRoom.y);
     }
     if(yPos < 0) {
         yPos = matrixSize - 1;
@@ -846,10 +848,10 @@ void move(direction dir) {
         else {
             currentRoom.y == 0 ? currentMatrix = matrix00[0] : currentMatrix = matrix01[0];
         }
-        Serial.print("In room: ");
-        Serial.print(currentRoom.x);
-        Serial.print(", ");
-        Serial.println(currentRoom.y);
+        // Serial.print("In room: ");
+        // Serial.print(currentRoom.x);
+        // Serial.print(", ");
+        // Serial.println(currentRoom.y);
     }
     if(xPos > matrixSize - 1) {
         xPos = 0;
@@ -861,10 +863,10 @@ void move(direction dir) {
         else {
             currentRoom.x == 0 ? currentMatrix = matrix01[0] : currentMatrix = matrix11[0];
         }
-        Serial.print("In room: ");
-        Serial.print(currentRoom.x);
-        Serial.print(", ");
-        Serial.println(currentRoom.y);
+        // Serial.print("In room: ");
+        // Serial.print(currentRoom.x);
+        // Serial.print(", ");
+        // Serial.println(currentRoom.y);
         
     }
     if(yPos > matrixSize - 1) {
@@ -877,10 +879,10 @@ void move(direction dir) {
         else {
             currentRoom.y == 0 ? currentMatrix = matrix10[0] : currentMatrix = matrix11[0];
         }
-        Serial.print("In room: ");
-        Serial.print(currentRoom.x);
-        Serial.print(", ");
-        Serial.println(currentRoom.y);
+        // Serial.print("In room: ");
+        // Serial.print(currentRoom.x);
+        // Serial.print(", ");
+        // Serial.println(currentRoom.y);
     }
 
     if((currentMatrix + xPos * matrixSize)[yPos]) {
@@ -958,7 +960,7 @@ void printMenu(int subMenu = 0) {
     lcd.clear();
     switch(subMenu) {
         case menu:
-            Serial.println("Main menu:");
+            // Serial.println("Main menu:");
             lcd.setCursor(0, 0);
             lcd.print("Rapid Shootout");
             lcd.write(byte(7));
@@ -971,7 +973,7 @@ void printMenu(int subMenu = 0) {
             lcd.write(byte(4));
             lcd.print("       ");
             lcd.write(byte(7));
-            Serial.println("Play");
+            // Serial.println("Play");
             break;
         case easy:
             lcd.setCursor(0, 0);
@@ -984,8 +986,8 @@ void printMenu(int subMenu = 0) {
             break;
         case easy * select:
             roundTime = easyTime;
-            Serial.print(F("Round time: "));
-            Serial.println(roundTime);
+            // Serial.print(F("Round time: "));
+            // Serial.println(roundTime);
             scoreMultiplier = 1;
             start = 1;
             finished = 0;
@@ -1006,8 +1008,8 @@ void printMenu(int subMenu = 0) {
             break;
         case medium * select:
             roundTime = mediumTime;
-            Serial.print(F("Round time: "));
-            Serial.println(roundTime);
+            // Serial.print(F("Round time: "));
+            // Serial.println(roundTime);
             scoreMultiplier = mediumScoreMultiplier;
             start = 1;
             finished = 0;
@@ -1028,8 +1030,8 @@ void printMenu(int subMenu = 0) {
             break;
         case hard * select:
             roundTime = hardTime;
-            Serial.print(F("Round time: "));
-            Serial.println(roundTime);
+            // Serial.print(F("Round time: "));
+            // Serial.println(roundTime);
             scoreMultiplier = hardScoreMultiplier;
             start = 1;
             finished = 0;
@@ -1044,7 +1046,7 @@ void printMenu(int subMenu = 0) {
             lcd.print("> Settings ");
             lcd.write(byte(2));
             lcd.print("   ");
-            Serial.println("Settings");
+            // Serial.println("Settings");
             lcd.write(byte(7));
             waitingForInput = true;
             break;
@@ -1056,7 +1058,7 @@ void printMenu(int subMenu = 0) {
             lcd.setCursor(1, 1);
             lcd.print("LCD Glow     ");
             lcd.write(byte(7));
-            Serial.println("LCD Glow");
+            // Serial.println("LCD Glow");
             break;
         case lcdLow:
             lcd.setCursor(0, 0);
@@ -1114,7 +1116,7 @@ void printMenu(int subMenu = 0) {
             lcd.setCursor(1, 1);
             lcd.print("Matrix Glow  ");
             lcd.write(byte(7));
-            Serial.println("Matrix Glow");
+            // Serial.println("Matrix Glow");
             break;
         case matrixLow:
             lcd.setCursor(0, 0);
@@ -1178,8 +1180,8 @@ void printMenu(int subMenu = 0) {
         case matrixAuto * select:
             automaticBrightness = !automaticBrightness;
             EEPROM.put(matrixBrightnessAutoAddress, automaticBrightness);
-            // Serial.print(F("Automatic brightness: "));
-            // Serial.println(automaticBrightness);
+            // // Serial.print(F("Automatic brightness: "));
+            // // Serial.println(automaticBrightness);
             option = matrixLow;
             selected = matrixAuto % 10;
             printMenu(option + selected);
@@ -1193,7 +1195,7 @@ void printMenu(int subMenu = 0) {
             lcd.print("Sound ");
             lcd.print(soundOn ? "Off    " : "On     ");
             lcd.write(byte(7));
-            Serial.println("Sound");
+            // Serial.println("Sound");
             break;
         case soundSettings * select:
             soundOn = !soundOn;
@@ -1208,7 +1210,7 @@ void printMenu(int subMenu = 0) {
             lcd.write(byte(5));
             lcd.print("      ");
             lcd.write(byte(7));
-            Serial.println("About");
+            // Serial.println("About");
             break;
         case expandedAboutGameName:
             lcd.setCursor(0, 0);
@@ -1259,7 +1261,7 @@ void printMenu(int subMenu = 0) {
             lcd.print("> Select Name ");
             lcd.write(byte(5));
             lcd.write(byte(7));
-            Serial.println("Name");
+            // Serial.println("Name");
             break;
         case nameSelect * select:
             lcd.setCursor(0, 0);
@@ -1277,7 +1279,7 @@ void printMenu(int subMenu = 0) {
             lcd.print("> How to play ");
             lcd.write(byte(5));
             lcd.write(byte(7));
-            Serial.println("How to play");
+            // Serial.println("How to play");
             break;
         case howToPlay * select:
             lcd.setCursor(0, 0);
@@ -1287,14 +1289,14 @@ void printMenu(int subMenu = 0) {
             lcd.print("<");
             lcd.write(byte(7));
             lcd.print(">");
-            Serial.println("How to play");
+            // Serial.println("How to play");
             break;
         case leaderBoard:
             lcd.setCursor(0, 0);
             lcd.print("> Leaderboard ");
             lcd.write(byte(1));
             lcd.write(byte(7));
-            Serial.println("Leaderboard");
+            // Serial.println("Leaderboard");
             break;
         case firstHighScore:
             lcd.setCursor(0, 0);
@@ -1333,9 +1335,9 @@ void printMenu(int subMenu = 0) {
             lcd.write(byte(7));
             break;
         default:
-            Serial.print(F("Invalid options: "));
-            Serial.println(subMenu);
-            Serial.print(F("\n"));
+            // Serial.print(F("Invalid options: "));
+            // Serial.println(subMenu);
+            // Serial.print(F("\n"));
             break;
     }
 }
@@ -1390,17 +1392,17 @@ void animateLCD(int ownChar) {
 
 void getSettings() {
     EEPROM.get(matrixBrightnessAddress, matrixBrightness);
-    Serial.print(F("Matrix brightness: "));
-    Serial.println(matrixBrightness);
+    // Serial.print(F("Matrix brightness: "));
+    // Serial.println(matrixBrightness);
     EEPROM.get(matrixBrightnessAutoAddress, automaticBrightness);
-    Serial.print(F("Automatic brightness: "));
-    Serial.println(automaticBrightness);
+    // Serial.print(F("Automatic brightness: "));
+    // Serial.println(automaticBrightness);
     EEPROM.get(lcdBrightnessAddress, lcdBrightness);
-    Serial.print(F("LCD brightness: "));
-    Serial.println(lcdBrightness);
+    // Serial.print(F("LCD brightness: "));
+    // Serial.println(lcdBrightness);
     EEPROM.get(soundSettingsAddress, soundOn);
-    Serial.print(F("Sound: "));
-    Serial.println(soundOn);
+    // Serial.print(F("Sound: "));
+    // Serial.println(soundOn);
 }
 
 void createLCDChars() {
@@ -1424,9 +1426,9 @@ void getHighScores() {
         EEPROM.get(currentAddress, highScores[i++]);
     }
     for(int i = 0; i < 3; i++) {
-      Serial.print(i);
-      Serial.print(" este ");
-      Serial.print(highScores[i].name);
+      // Serial.print(i);
+      // Serial.print(" este ");
+      // Serial.print(highScores[i].name);
     }
 }
 
@@ -1440,20 +1442,20 @@ void putDummyHighscores() {
 }
 
 void checkHighScores() {
-    Serial.print("Checcking ");
-    Serial.print(currentPlayer.name);
-    Serial.print(" ");
-    Serial.println(currentPlayer.score);
+    // Serial.print("Checcking ");
+    // Serial.print(currentPlayer.name);
+    // Serial.print(" ");
+    // Serial.println(currentPlayer.score);
     for(int i = 2; i >= 0; i--) {
-        Serial.print(highScores[i].name);
+        // Serial.print(highScores[i].name);
         if(currentPlayer.score >= highScores[i].score) {
-            Serial.println(" is higher");
+            // Serial.println(" is higher");
             newHighScore = true;
             for(int j = 0; j < i; j++) {
-                Serial.print("Moving ");
-                Serial.print(highScores[j + 1].name);
-                Serial.print(" ");
-                Serial.println(highScores[j + 1].score);
+                // Serial.print("Moving ");
+                // Serial.print(highScores[j + 1].name);
+                // Serial.print(" ");
+                // Serial.println(highScores[j + 1].score);
                 highScores[j] = highScores[j + 1];
             }
             highScores[i] = currentPlayer;
@@ -1471,12 +1473,12 @@ void checkHighScores() {
         newHighScore = false;
     }
     for(int i = 0; i < 3; i++) {
-        Serial.print(highScores[i].name);
-        Serial.print(" ");
-        Serial.println(highScores[i].score);
+        // Serial.print(highScores[i].name);
+        // Serial.print(" ");
+        // Serial.println(highScores[i].score);
         EEPROM.put(highScoresAddress + i * sizeof(Player), highScores[i]);
     }
-    Serial.println("High scores updated");
+    // Serial.println("High scores updated");
 }
 
 void last5Seconds() {
