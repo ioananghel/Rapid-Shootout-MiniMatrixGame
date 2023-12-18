@@ -66,15 +66,17 @@ How to Play
 <summary>
 Physical Requirements
 </summary>
-  - Arduino Board
-  - Breadboard
-  - 8x8 LED Matrix
-  - Joystick
-  - Button
-  - Buzzer
-  - 2x 10 kOhm Resistor for pull-down
-  - 20 kOhm Resistor for LED Matrix
-  - 100 uF Electroytic Capacitor
-  - 0.1 uF Ceramic Capacitor
-  - Wires
+  <ul>
+  <li>Arduino Board</li>
+  <li>Breadboard</li>
+  <li>8x8 LED Matrix</li>
+  <li>Joystick</li>
+  <li>Button</li>
+  <li>Buzzer</li>
+  <li>2x 10 kOhm Resistor for pull-down</li>
+  <li>20 kOhm Resistor for LED Matrix</li>
+  <li>100 uF Electroytic Capacitor</li>
+  <li>0.1 uF Ceramic Capacitor</li>
+  <li>Wires</li>
+  </ul>
 </details>
