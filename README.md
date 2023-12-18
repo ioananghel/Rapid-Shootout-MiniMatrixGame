@@ -20,24 +20,42 @@ The game is a one-player shooter, where the player is spawned randomly in a room
 <summary>
 How to Play
 </summary>
-  <details>
-    <summarry>
+  <details style="margin-left: 20px;">
+    <summary>
     Menu Navigation
     </summary>
-    - Scrolling through the menu is done with the joystick, by moving it up and down.
-    - Selecting an option is done by pressing the button or by moving the joystick to the right.
-    - Going back to the previous menu is done by moving the joystick to the left.
-    - !The play option may not be selected via the joystick, in order to not start the game by mistake.
+    <ul>
+      <li>Scrolling through the menu is done with the joystick, by moving it up and down.</li>
+      <li>Selecting an option is done by pressing the button or by moving the joystick to the right.</li>
+      <li>Going back to the previous menu is done by moving the joystick to the left.</li>
+      <li>!The play option may not be selected via the joystick, in order to not start the game by mistake.</li>
+    </ul>
     </details>
 
-  <details>
-    <summarry>
+  <details style="margin-left: 20px;">
+    <summary>
     Game Controls
     </summary>
-    - Moving the player is done by moving the joystick in the desired direction.
-    - Shooting is done by pressing the button, and the bullet will take the last direction of the player.
+    <ul>
+      <li>Moving the player is done by moving the joystick in the desired direction.</li>
+      <li>Shooting is done by pressing the button, and the bullet will take the last direction of the player.</li>
+    </ul>
     </details>
 
+  <details style="margin-left: 20px;">
+    <summary>
+    Game Rules and Player Bonuses
+    </summary>
+    <ul>
+      <li>Each wall values 1p, 2p or 3p, based on the difficulty of the round: Easy, Medium, Hard</li>
+      <li>Each round lasts for 90s, 60s or 30s, based on the difficulty of the round: Easy, Medium, Hard</li>
+      <li>The player has 5, 4 or 3 lives, based on the difficulty of the round: Easy, Medium, Hard</li>
+      <li>The player navigates the rooms by going out of the matrix bounds</li>
+      <li>Bullets travel the current matrix by returning in bounds, on the other side, after exiting it</li>
+      <li>A streak can be obtained by shooting walls in order, with less than 900ms between them. This will double their values.</li>
+      <li>During the last 5 seconds of each round, the room gets locked and the player cannot leave the room. The points are doubled during this moment.</li>
+    </ul>
+    </details>
 
 </details>
 
