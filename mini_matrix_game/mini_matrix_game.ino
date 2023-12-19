@@ -62,7 +62,7 @@ int noWalls = 0, initialNoWalls = 0, streak = 0;
 unsigned long streakStart = 0, streakTime = 900;
 unsigned long startTime = 0;
 
-const int menu = 0, play = 1, easy = 10, medium = 11, hard = 12, settings = 2, setLCDBrightness = 20, lcdLow = 200, lcdMed = 201, lcdHigh = 202, setMatrixBrightness = 21, matrixLow = 210, matrixMed = 211, matrixHigh = 212, matrixAuto = 213, soundSettings = 22, about = 3, expandedAboutGameName = 30, expandedAboutCreatorName = 31, expandedAboutGitHub = 32, expandedAboutLinkedin = 33, nameSelect = 4, howToPlay = 5, howToJoyStick = 50, howToShoot = 51, haveFun = 52, leaderBoard = 6, firstHighScore = 60, secondHighScore = 61, thirdHighScore = 62;
+const int menu = 0, play = 1, easy = 10, medium = 11, hard = 12, settings = 2, setLCDBrightness = 20, lcdLow = 200, lcdMed = 201, lcdHigh = 202, setMatrixBrightness = 21, matrixLow = 210, matrixMed = 211, matrixHigh = 212, matrixAuto = 213, soundSettings = 22, resetHighScores = 23, about = 3, expandedAboutGameName = 30, expandedAboutCreatorName = 31, expandedAboutGitHub = 32, expandedAboutLinkedin = 33, nameSelect = 4, howToPlay = 5, howToJoyStick = 50, howToShoot = 51, haveFun = 52, leaderBoard = 6, firstHighScore = 60, secondHighScore = 61, thirdHighScore = 62;
 const int select = 10;
 // const unsigned long easyTime = 90 * second, mediumTime = 60 * second, hardTime = 30 * second;
 const unsigned long easyTime = 90, mediumTime = 60, hardTime = 30;
@@ -72,7 +72,7 @@ const int easyLives = 5, mediumLives = 4, hardLives = 3;
 int lives = 3, timerIndex = 0, scoreIndex = 0, currentScore = 0;
 unsigned long roundTime = easyTime;
 unsigned long lastUpdateTime = 0;
-int menuNo = 4, aboutNo = 3, settingsNo = 2, lcdNo = 2, matrixNo = 3, highScoresNo = 2, difficultiesNo = 2, howToNo = 2;
+int menuNo = 4, aboutNo = 3, settingsNo = 3, lcdNo = 2, matrixNo = 3, highScoresNo = 2, difficultiesNo = 2, howToNo = 2;
 bool lockMatrix = false;
 
 const int soundFrequencies = 3;
@@ -1164,6 +1164,23 @@ void printMenu(int subMenu = 0) {
             selected = soundSettings % 10;
             printMenu(option + selected);
             break;
+        case resetHighScores:
+            lcd.setCursor(0, 0);
+            lcd.write(byte(4));
+            lcd.print(" Settings ");
+            lcd.write(byte(2));
+            lcd.setCursor(1, 1);
+            lcd.print("Reset Scores ");
+            lcd.write(byte(7));
+            // Serial.println("Reset High");
+            break;
+        case resetHighScores * select:
+            putDummyHighscores();
+            getHighScores();
+            option = setLCDBrightness;
+            selected = resetHighScores % 10;
+            printMenu(option + selected);
+            break;
         case about:
             lcd.setCursor(0, 0);
             lcd.print("> About ");
@@ -1407,9 +1424,9 @@ void getHighScores() {
 }
 
 void putDummyHighscores() {
-    Player dummy1 = {"AAA", 10};
-    Player dummy2 = {"BBB", 11};
-    Player dummy3 = {"CCC", 12};
+    Player dummy1 = {"AAA", 0};
+    Player dummy2 = {"BBB", 0};
+    Player dummy3 = {"CCC", 0};
     EEPROM.put(highScoresAddress, dummy1);
     EEPROM.put(highScoresAddress + sizeof(Player), dummy2);
     EEPROM.put(highScoresAddress + 2 * sizeof(Player), dummy3);
