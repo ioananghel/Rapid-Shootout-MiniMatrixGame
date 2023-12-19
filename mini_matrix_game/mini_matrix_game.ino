@@ -62,7 +62,7 @@ int noWalls = 0, initialNoWalls = 0, streak = 0;
 unsigned long streakStart = 0, streakTime = 900;
 unsigned long startTime = 0;
 
-const int menu = 0, play = 1, easy = 10, medium = 11, hard = 12, settings = 2, setLCDBrightness = 20, lcdLow = 200, lcdMed = 201, lcdHigh = 202, setMatrixBrightness = 21, matrixLow = 210, matrixMed = 211, matrixHigh = 212, matrixAuto = 213, soundSettings = 22, about = 3, expandedAboutGameName = 30, expandedAboutCreatorName = 31, expandedAboutGitHub = 32, expandedAboutLinkedin = 33, nameSelect = 4, howToPlay = 5, leaderBoard = 6, firstHighScore = 60, secondHighScore = 61, thirdHighScore = 62;
+const int menu = 0, play = 1, easy = 10, medium = 11, hard = 12, settings = 2, setLCDBrightness = 20, lcdLow = 200, lcdMed = 201, lcdHigh = 202, setMatrixBrightness = 21, matrixLow = 210, matrixMed = 211, matrixHigh = 212, matrixAuto = 213, soundSettings = 22, about = 3, expandedAboutGameName = 30, expandedAboutCreatorName = 31, expandedAboutGitHub = 32, expandedAboutLinkedin = 33, nameSelect = 4, howToPlay = 5, howToJoyStick = 50, howToShoot = 51, haveFun = 52, leaderBoard = 6, firstHighScore = 60, secondHighScore = 61, thirdHighScore = 62;
 const int select = 10;
 // const unsigned long easyTime = 90 * second, mediumTime = 60 * second, hardTime = 30 * second;
 const unsigned long easyTime = 90, mediumTime = 60, hardTime = 30;
@@ -72,7 +72,7 @@ const int easyLives = 5, mediumLives = 4, hardLives = 3;
 int lives = 3, timerIndex = 0, scoreIndex = 0, currentScore = 0;
 unsigned long roundTime = easyTime;
 unsigned long lastUpdateTime = 0;
-int menuNo = 4, aboutNo = 3, settingsNo = 2, lcdNo = 2, matrixNo = 3, highScoresNo = 2, difficultiesNo = 2;
+int menuNo = 4, aboutNo = 3, settingsNo = 2, lcdNo = 2, matrixNo = 3, highScoresNo = 2, difficultiesNo = 2, howToNo = 2;
 bool lockMatrix = false;
 
 const int soundFrequencies = 3;
@@ -96,49 +96,6 @@ direction currentRoom = {0, 0};
 Player currentPlayer;
 Player highScores[3];
 bool newHighScore = false;
-
-byte matrix00[matrixSize][matrixSize] = {
-  {2, 2, 2, 0, 0, 2, 2, 2},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {2, 2, 2, 0, 0, 2, 2, 2}  
-};
-byte matrix01[matrixSize][matrixSize] = {
-  {2, 2, 2, 0, 0, 2, 2, 2},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {2, 2, 2, 0, 0, 2, 2, 2}  
-};
-byte matrix10[matrixSize][matrixSize] = {
-  {2, 2, 2, 0, 0, 2, 2, 2},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {2, 2, 2, 0, 0, 2, 2, 2}  
-};
-byte matrix11[matrixSize][matrixSize] = {
-  {2, 2, 2, 0, 0, 2, 2, 2},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {2, 0, 0, 0, 0, 0, 0, 2},
-  {2, 2, 2, 0, 0, 2, 2, 2}  
-};
-
-byte *currentMatrix = matrix00[0];
 
 void updateMatrix();
 void pulseMatrix();
@@ -682,6 +639,9 @@ void navigateMenu() {
     else if(option == 30) {
         menuNo = aboutNo;
     }
+    else if(option == 50) {
+        menuNo = howToNo;
+    }
     else if(option == 60) {
         menuNo = highScoresNo;
     }
@@ -742,7 +702,7 @@ void selectInMenu(bool fromJoystick = false) {
         // Serial.println(option);
         lcd.createChar(4, downwardArrow);
         lastChangeSW = millis();
-        if(option == 0 && selected == 0 || option / 10 == 3) {
+        if(option == 0 && selected == 0 || option / 10 == 3 || option / 10 == 5 || option / 10 == 6) {
             return;
         }
         else if(option == 0 || option / 10 < 10 || option == 200 || option == 210) {
@@ -1281,15 +1241,29 @@ void printMenu(int subMenu = 0) {
             lcd.write(byte(7));
             // Serial.println("How to play");
             break;
-        case howToPlay * select:
+        case howToJoyStick:
             lcd.setCursor(0, 0);
             lcd.write(byte(4));
             lcd.print(" How to play");
-            lcd.setCursor(13, 1);
-            lcd.print("<");
+            lcd.setCursor(1, 1);
+            lcd.print("Joystick-Move");
             lcd.write(byte(7));
-            lcd.print(">");
-            // Serial.println("How to play");
+            break;
+        case howToShoot:
+            lcd.setCursor(0, 0);
+            lcd.write(byte(4));
+            lcd.print(" How to play");
+            lcd.setCursor(1, 1);
+            lcd.print("Button-Shoot");
+            lcd.write(byte(7));
+            break;
+        case haveFun:
+            lcd.setCursor(0, 0);
+            lcd.write(byte(4));
+            lcd.print(" How to play");
+            lcd.setCursor(1, 1);
+            lcd.print("Have fun!    ");
+            lcd.write(byte(7));
             break;
         case leaderBoard:
             lcd.setCursor(0, 0);
