@@ -563,6 +563,12 @@ void shootSound() {
     }
 }
 
+void navigateMenuSound() {
+    tone(buzzerPin, 1000, 50);
+    delay(20);
+    noTone(buzzerPin);
+}
+
 
 void blinkLEDs() {
     if(millis() - lastPlayerBlink > playerBlinkingTime) {
@@ -918,6 +924,7 @@ void generateWalls() {
 
 void printMenu(int subMenu = 0) {
     lcd.clear();
+    navigateMenuSound();
     switch(subMenu) {
         case menu:
             // Serial.println("Main menu:");
@@ -927,6 +934,7 @@ void printMenu(int subMenu = 0) {
             menuDisplayed = true;
             break;
         case play:
+            displayAnimation(fullMatrix);
             lcd.createChar(4, playButton);
             lcd.setCursor(0, 0);
             lcd.print("> Play ");
@@ -1002,6 +1010,7 @@ void printMenu(int subMenu = 0) {
             inMenu = false;
             break;
         case settings:
+            displayAnimation(wrenchMatrix);
             lcd.setCursor(0, 0);
             lcd.print("> Settings ");
             lcd.write(byte(2));
@@ -1088,6 +1097,7 @@ void printMenu(int subMenu = 0) {
             break;
         case matrixLow * select:
             automaticBrightness = false;
+            EEPROM.put(matrixBrightnessAutoAddress, automaticBrightness);
             matrixBrightness = 2;
             EEPROM.put(matrixBrightnessAddress, matrixBrightness);
             lc.setIntensity(0, matrixBrightness);
@@ -1105,6 +1115,7 @@ void printMenu(int subMenu = 0) {
             break;
         case matrixMed * select:
             automaticBrightness = false;
+            EEPROM.put(matrixBrightnessAutoAddress, automaticBrightness);
             matrixBrightness = 7.5;
             EEPROM.put(matrixBrightnessAddress, matrixBrightness);
             lc.setIntensity(0, matrixBrightness);
@@ -1122,6 +1133,7 @@ void printMenu(int subMenu = 0) {
             break;
         case matrixHigh * select:
             automaticBrightness = false;
+            EEPROM.put(matrixBrightnessAutoAddress, automaticBrightness);
             matrixBrightness = 15;
             EEPROM.put(matrixBrightnessAddress, matrixBrightness);
             lc.setIntensity(0, matrixBrightness);
@@ -1182,6 +1194,7 @@ void printMenu(int subMenu = 0) {
             printMenu(option + selected);
             break;
         case about:
+            displayAnimation(explosion2Step);
             lcd.setCursor(0, 0);
             lcd.print("> About ");
             lcd.write(byte(5));
@@ -1234,6 +1247,7 @@ void printMenu(int subMenu = 0) {
             lcd.write(byte(7));
             break;
         case nameSelect:
+            displayAnimation(explosion3Step);
             lcd.setCursor(0, 0);
             lcd.print("> Select Name ");
             lcd.write(byte(5));
@@ -1252,6 +1266,7 @@ void printMenu(int subMenu = 0) {
             inMenu = false;
             break;
         case howToPlay:
+            displayAnimation(fullMatrix);
             lcd.setCursor(0, 0);
             lcd.print("> How to play ");
             lcd.write(byte(5));
@@ -1283,6 +1298,7 @@ void printMenu(int subMenu = 0) {
             lcd.write(byte(7));
             break;
         case leaderBoard:
+            displayAnimation(flippedTrophyMatrix);
             lcd.setCursor(0, 0);
             lcd.print("> Leaderboard ");
             lcd.write(byte(1));
