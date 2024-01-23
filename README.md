@@ -91,6 +91,7 @@ Physical Requirements
   <li>0.1 uF Ceramic Capacitor</li>
   <li>Wires</li>
   </ul>
+  
   ![Circuit](circuit_pic.jpg)
 </details>
 
